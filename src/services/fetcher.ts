@@ -91,8 +91,8 @@ export class FetcherService {
           allOrganisations = allOrganisations.concat(pageResponse.data.results);
         }
         
-        // Check for next page
-        currentUrl = pageResponse.data?.links?.next || null;
+        // Check for next page - the API returns next_page_url
+        currentUrl = pageResponse.data?.next_page_url || null;
         if (currentUrl === null) break;
       }
       
