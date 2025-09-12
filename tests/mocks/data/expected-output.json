@@ -1,0 +1,473 @@
+{
+  "organisations": [
+    {
+      "id": "cabinet-office-96ae61d6",
+      "name": "Cabinet Office",
+      "alternativeNames": [],
+      "type": "ministerial_department",
+      "classification": "Central Government",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "2016-07-13",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "96ae61d6-c2a1-48cb-8e67-da9d105ae381",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/cabinet-office",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "CO001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.9,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "department-for-education-ebd15ade",
+      "name": "Department for Education",
+      "alternativeNames": ["DfE"],
+      "type": "ministerial_department",
+      "classification": "Central Government",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "1992-04-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "ebd15ade-73b2-4eaf-b1c3-43034a42eb37",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/department-for-education",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "DFE001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.85,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "education-skills-funding-agency-71381a6e",
+      "name": "Education and Skills Funding Agency",
+      "alternativeNames": ["ESFA"],
+      "type": "executive_agency",
+      "classification": "Central Government Body",
+      "parentOrganisation": "department-for-education-ebd15ade",
+      "controllingUnit": "Department for Education",
+      "status": "active",
+      "establishmentDate": "2017-04-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "71381a6e-aa5c-43ae-a982-be9bfd46ea5b",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/education-and-skills-funding-agency",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "ESFA001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        },
+        {
+          "source": "ons_non_institutional_unit",
+          "sourceId": "education-and-skills-funding-agency-apprenticeships",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.8
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.95,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "department-health-social-care-7cd6bf12",
+      "name": "Department of Health and Social Care",
+      "alternativeNames": ["DHSC"],
+      "type": "ministerial_department",
+      "classification": "Central Government",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "2018-01-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "7cd6bf12-bbe9-4118-8523-f927b0442156",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/department-of-health-and-social-care",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "DHSC001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.9,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "nhs-england-61292775",
+      "name": "NHS England",
+      "alternativeNames": ["NHSE"],
+      "type": "non_departmental_public_body",
+      "classification": "Central Government Body",
+      "parentOrganisation": "department-health-social-care-7cd6bf12",
+      "controllingUnit": "Department of Health and Social Care",
+      "status": "active",
+      "establishmentDate": "2013-04-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "61292775-3501-4f0a-bfe2-4e46bf5f7b69",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/nhs-england",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "NHSE001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.9,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "home-office-06056197",
+      "name": "Home Office",
+      "alternativeNames": [],
+      "type": "ministerial_department",
+      "classification": "Central Government",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "1782-03-27",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "06056197-bc69-4147-aa28-070bca132178",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/home-office",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "HO001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.85,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "uk-visas-immigration-04148522",
+      "name": "UK Visas and Immigration",
+      "alternativeNames": ["UKVI"],
+      "type": "executive_agency",
+      "classification": "Central Government Body",
+      "parentOrganisation": "home-office-06056197",
+      "controllingUnit": "Home Office",
+      "status": "active",
+      "establishmentDate": "2013-03-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "04148522-b0c1-4137-b687-5f3c3bdd561a",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/uk-visas-and-immigration",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "UKVI001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.9,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "city-london-corporation-da218840",
+      "name": "City of London Corporation",
+      "alternativeNames": ["City of London", "Square Mile Corporation"],
+      "type": "local_authority",
+      "classification": "Local Authority",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "1067-01-01",
+      "dissolutionDate": null,
+      "location": {
+        "address": "Guildhall, London",
+        "region": "London",
+        "country": "England"
+      },
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "da218840-c506-4c82-8f5d-7e13ab836f8c",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/city-of-london-corporation",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "COLC001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.95,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "guys-st-thomas-nhs-trust-b1e2c3d4",
+      "name": "Guy's and St Thomas' NHS Foundation Trust",
+      "alternativeNames": ["GSTT", "Guy's and St Thomas'"],
+      "type": "nhs_foundation_trust",
+      "classification": "NHS Foundation Trust",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "2004-07-01",
+      "dissolutionDate": null,
+      "location": {
+        "address": "Great Maze Pond, London SE1 9RT",
+        "region": "London",
+        "country": "England"
+      },
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "b1e2c3d4-e5f6-7890-1234-567890abcdef",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/guy-and-st-thomas-nhs-foundation-trust",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "GSTT001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.95,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "ofsted-cfb9b202",
+      "name": "Ofsted",
+      "alternativeNames": ["Office for Standards in Education, Children's Services and Skills"],
+      "type": "non_departmental_public_body",
+      "classification": "Non-departmental Public Body",
+      "parentOrganisation": "department-for-education-ebd15ade",
+      "controllingUnit": "Department for Education",
+      "status": "active",
+      "establishmentDate": "1992-09-01",
+      "dissolutionDate": null,
+      "location": null,
+      "sources": [
+        {
+          "source": "gov_uk_api",
+          "sourceId": "cfb9b202-6530-45d8-9c14-2bc6a5c5b8f5",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.gov.uk/api/content/government/organisations/ofsted",
+          "confidence": 1.0
+        },
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "OFSTED001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.95
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.9,
+        "hasConflicts": false,
+        "requiresReview": false
+      }
+    },
+    {
+      "id": "manchester-city-council-mcc001",
+      "name": "Manchester City Council",
+      "alternativeNames": ["MCC"],
+      "type": "local_authority",
+      "classification": "Local Authority",
+      "parentOrganisation": null,
+      "controllingUnit": null,
+      "status": "active",
+      "establishmentDate": "1974-04-01",
+      "dissolutionDate": null,
+      "location": {
+        "address": "Town Hall, Manchester",
+        "region": "North West England",
+        "country": "England"
+      },
+      "sources": [
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "MCC001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.9
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.7,
+        "hasConflicts": false,
+        "requiresReview": true,
+        "reviewReasons": ["Missing GOV.UK data", "Single source only"]
+      }
+    },
+    {
+      "id": "transport-for-london-tfl001",
+      "name": "Transport for London",
+      "alternativeNames": ["TfL"],
+      "type": "other",
+      "classification": "Local Authority",
+      "parentOrganisation": null,
+      "controllingUnit": "Greater London Authority",
+      "status": "active",
+      "establishmentDate": "2000-07-03",
+      "dissolutionDate": null,
+      "location": {
+        "address": "Windsor House, London",
+        "region": "London",
+        "country": "England"
+      },
+      "sources": [
+        {
+          "source": "ons_institutional_unit",
+          "sourceId": "TFL001",
+          "retrievedAt": "2023-12-01T10:00:00.000Z",
+          "url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications",
+          "confidence": 0.9
+        }
+      ],
+      "lastUpdated": "2023-12-01T10:30:00.000Z",
+      "dataQuality": {
+        "completeness": 0.75,
+        "hasConflicts": false,
+        "requiresReview": true,
+        "reviewReasons": ["Missing GOV.UK data", "Single source only"]
+      }
+    }
+  ],
+  "metadata": {
+    "processedAt": "2023-12-01T10:30:00.000Z",
+    "sources": [
+      {
+        "source": "gov_uk_api",
+        "recordCount": 10,
+        "retrievedAt": "2023-12-01T10:00:00.000Z",
+        "errors": []
+      },
+      {
+        "source": "ons_institutional_unit",
+        "recordCount": 15,
+        "retrievedAt": "2023-12-01T10:00:00.000Z",
+        "errors": []
+      },
+      {
+        "source": "ons_non_institutional_unit",
+        "recordCount": 15,
+        "retrievedAt": "2023-12-01T10:00:00.000Z",
+        "errors": []
+      }
+    ],
+    "statistics": {
+      "totalOrganisations": 13,
+      "duplicatesFound": 7,
+      "conflictsDetected": 0,
+      "organisationsByType": {
+        "ministerial_department": 4,
+        "executive_agency": 2,
+        "non_departmental_public_body": 2,
+        "local_authority": 2,
+        "nhs_foundation_trust": 1,
+        "other": 2
+      }
+    }
+  },
+  "conflicts": [],
+  "errors": []
+}

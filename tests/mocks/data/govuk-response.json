@@ -1,0 +1,236 @@
+{
+  "links": {
+    "organisations": [
+      {
+        "analytics_identifier": "D1",
+        "api_path": "/api/content/government/organisations/cabinet-office",
+        "base_path": "/government/organisations/cabinet-office",
+        "content_id": "96ae61d6-c2a1-48cb-8e67-da9d105ae381",
+        "description": "The Cabinet Office sits at the very centre of government, with an overarching purpose of making government work better.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-10-15T14:30:00.000Z",
+        "schema_name": "organisation",
+        "title": "Cabinet Office",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-10-15T14:30:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "D8",
+        "api_path": "/api/content/government/organisations/department-for-education",
+        "base_path": "/government/organisations/department-for-education",
+        "content_id": "ebd15ade-73b2-4eaf-b1c3-43034a42eb37",
+        "description": "We're responsible for children's services and education, including early years, schools, higher and further education policy.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-11-02T09:15:00.000Z",
+        "schema_name": "organisation",
+        "title": "Department for Education",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-11-02T09:15:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "EA116",
+        "api_path": "/api/content/government/organisations/education-and-skills-funding-agency",
+        "base_path": "/government/organisations/education-and-skills-funding-agency",
+        "content_id": "71381a6e-aa5c-43ae-a982-be9bfd46ea5b",
+        "description": "The Education and Skills Funding Agency brings together the former Education Funding Agency and Skills Funding Agency.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-09-20T16:45:00.000Z",
+        "schema_name": "organisation",
+        "title": "Education and Skills Funding Agency",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-09-20T16:45:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": [
+            {
+              "title": "Department for Education",
+              "content_id": "ebd15ade-73b2-4eaf-b1c3-43034a42eb37"
+            }
+          ]
+        }
+      },
+      {
+        "analytics_identifier": "D16",
+        "api_path": "/api/content/government/organisations/department-of-health-and-social-care",
+        "base_path": "/government/organisations/department-of-health-and-social-care",
+        "content_id": "7cd6bf12-bbe9-4118-8523-f927b0442156",
+        "description": "We lead, shape and fund health and social care in England, making sure people have the support, care and treatment they need.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-10-25T11:20:00.000Z",
+        "schema_name": "organisation",
+        "title": "Department of Health and Social Care",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-10-25T11:20:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "PB555",
+        "api_path": "/api/content/government/organisations/nhs-england",
+        "base_path": "/government/organisations/nhs-england",
+        "content_id": "61292775-3501-4f0a-bfe2-4e46bf5f7b69",
+        "description": "NHS England leads the National Health Service in England, setting priorities and direction for the NHS.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-11-08T13:30:00.000Z",
+        "schema_name": "organisation",
+        "title": "NHS England",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-11-08T13:30:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": [
+            {
+              "title": "Department of Health and Social Care",
+              "content_id": "7cd6bf12-bbe9-4118-8523-f927b0442156"
+            }
+          ]
+        }
+      },
+      {
+        "analytics_identifier": "D17",
+        "api_path": "/api/content/government/organisations/home-office",
+        "base_path": "/government/organisations/home-office",
+        "content_id": "06056197-bc69-4147-aa28-070bca132178",
+        "description": "We work to build a safe, fair and prosperous country in which every person and community can thrive.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-10-30T10:15:00.000Z",
+        "schema_name": "organisation",
+        "title": "Home Office",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-10-30T10:15:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "EA78",
+        "api_path": "/api/content/government/organisations/uk-visas-and-immigration",
+        "base_path": "/government/organisations/uk-visas-and-immigration",
+        "content_id": "04148522-b0c1-4137-b687-5f3c3bdd561a",
+        "description": "UK Visas and Immigration is responsible for making millions of decisions which affect the right to visit, work, study or stay in the UK.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-09-12T14:22:00.000Z",
+        "schema_name": "organisation",
+        "title": "UK Visas and Immigration",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-09-12T14:22:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": [
+            {
+              "title": "Home Office",
+              "content_id": "06056197-bc69-4147-aa28-070bca132178"
+            }
+          ]
+        }
+      },
+      {
+        "analytics_identifier": "LA443",
+        "api_path": "/api/content/government/organisations/city-of-london-corporation",
+        "base_path": "/government/organisations/city-of-london-corporation",
+        "content_id": "da218840-c506-4c82-8f5d-7e13ab836f8c",
+        "description": "The City of London Corporation is the governing body of the Square Mile dedicated to a vibrant and thriving City, supporting a diverse and sustainable London.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-08-15T12:00:00.000Z",
+        "schema_name": "organisation",
+        "title": "City of London Corporation",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-08-15T12:00:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "NHS001",
+        "api_path": "/api/content/government/organisations/guy-and-st-thomas-nhs-foundation-trust",
+        "base_path": "/government/organisations/guy-and-st-thomas-nhs-foundation-trust",
+        "content_id": "b1e2c3d4-e5f6-7890-1234-567890abcdef",
+        "description": "Guy's and St Thomas' NHS Foundation Trust provides a range of services across four main hospital sites.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-07-20T08:30:00.000Z",
+        "schema_name": "organisation",
+        "title": "Guy's and St Thomas' NHS Foundation Trust",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-07-20T08:30:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": []
+        }
+      },
+      {
+        "analytics_identifier": "NDPB789",
+        "api_path": "/api/content/government/organisations/ofsted",
+        "base_path": "/government/organisations/ofsted",
+        "content_id": "cfb9b202-6530-45d8-9c14-2bc6a5c5b8f5",
+        "description": "We inspect services providing education and skills for learners of all ages.",
+        "document_type": "organisation",
+        "locale": "en",
+        "public_updated_at": "2023-11-15T16:45:00.000Z",
+        "schema_name": "organisation",
+        "title": "Ofsted",
+        "details": {
+          "organisation_govuk_status": {
+            "status": "live",
+            "updated_at": "2023-11-15T16:45:00.000Z"
+          }
+        },
+        "links": {
+          "parent_organisations": [
+            {
+              "title": "Department for Education",
+              "content_id": "ebd15ade-73b2-4eaf-b1c3-43034a42eb37"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "govuk_api": {
+    "endpoint": "https://www.gov.uk/api/content/government/organisations",
+    "method": "GET",
+    "response_schema": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "object",
+          "properties": {
+            "organisations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["title", "base_path", "content_id"],
+                "properties": {
+                  "analytics_identifier": { "type": ["string", "null"] },
+                  "api_path": { "type": "string" },
+                  "base_path": { "type": "string" },
+                  "content_id": { "type": "string" },
+                  "description": { "type": ["string", "null"] },
+                  "document_type": { "type": "string" },
+                  "locale": { "type": "string" },
+                  "public_updated_at": { "type": ["string", "null"] },
+                  "schema_name": { "type": "string" },
+                  "title": { "type": "string" },
+                  "details": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "organisation_govuk_status": {
+                        "type": ["object", "null"],
+                        "properties": {
+                          "status": { "type": "string" },
+                          "updated_at": { "type": "string" }
+                        }
+                      }
+                    }
+                  },
+                  "links": {
+                    "type": ["object", "null"],
+                    "properties": {
+                      "parent_organisations": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "title": { "type": "string" },
+                            "content_id": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "ons_excel": {
+    "source_url": "https://www.ons.gov.uk/methodology/classificationsandstandards/economicstatisticsclassifications/introductiontoeconomicstatisticsclassifications",
+    "file_pattern": "pscg*.xlsx",
+    "sheets": {
+      "institutional_units": {
+        "sheet_name": "Organisation|Institutional Unit",
+        "required_columns": [
+          "Organisation name"
+        ],
+        "optional_columns": [
+          "ONS code",
+          "Classification",
+          "Parent organisation",
+          "Start date",
+          "End date"
+        ]
+      },
+      "non_institutional_units": {
+        "sheet_name": "Non-Institutional Units",
+        "required_columns": [
+          "Non-Institutional Unit name",
+          "Sponsoring Entity"
+        ],
+        "optional_columns": [
+          "Classification",
+          "Status"
+        ]
+      }
+    }
+  }
+}

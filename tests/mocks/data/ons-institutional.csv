@@ -1,0 +1,16 @@
+Organisation name,ONS code,Classification,Parent organisation,Start date,End date
+Cabinet Office,CO001,Central Government,,"2016-07-13",
+Department for Education,DFE001,Central Government,,"1992-04-01",
+Education and Skills Funding Agency,ESFA001,Central Government Body,Department for Education,"2017-04-01",
+Department of Health and Social Care,DHSC001,Central Government,,"2018-01-01",
+NHS England,NHSE001,Central Government Body,Department of Health and Social Care,"2013-04-01",
+Home Office,HO001,Central Government,,"1782-03-27",
+UK Visas and Immigration,UKVI001,Central Government Body,Home Office,"2013-03-01",
+City of London Corporation,COLC001,Local Authority,,"1067-01-01",
+Guy's and St Thomas' NHS Foundation Trust,GSTT001,NHS Foundation Trust,,"2004-07-01",
+Ofsted,OFSTED001,Non-departmental Public Body,Department for Education,"1992-09-01",
+Manchester City Council,MCC001,Local Authority,,"1974-04-01",
+University of Cambridge,UCAM001,Higher Education Corporation,,"1209-01-01",
+British Council,BC001,Non-departmental Public Body,Foreign and Commonwealth Office,"1934-12-30",
+Natural History Museum,NHM001,Non-departmental Public Body,Department for Culture Media and Sport,"1963-04-01",
+Transport for London,TFL001,Local Authority,Greater London Authority,"2000-07-03"
