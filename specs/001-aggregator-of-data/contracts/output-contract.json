@@ -1,0 +1,216 @@
+{
+  "output_file": "dist/orgs.json",
+  "schema": {
+    "type": "object",
+    "required": ["organisations", "metadata"],
+    "properties": {
+      "organisations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["id", "name", "type", "status", "sources"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the organisation"
+            },
+            "name": {
+              "type": "string",
+              "description": "Primary name of the organisation"
+            },
+            "alternativeNames": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Alternative names or acronyms"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "ministerial_department",
+                "executive_agency",
+                "local_authority",
+                "nhs_trust",
+                "nhs_foundation_trust",
+                "non_departmental_public_body",
+                "executive_ndpb",
+                "advisory_ndpb",
+                "tribunal_ndpb",
+                "public_corporation",
+                "devolved_administration",
+                "other"
+              ]
+            },
+            "classification": {
+              "type": "string",
+              "description": "ONS classification"
+            },
+            "parentOrganisation": {
+              "type": ["string", "null"],
+              "description": "ID reference to parent organisation"
+            },
+            "controllingUnit": {
+              "type": ["string", "null"],
+              "description": "Sponsoring entity or controlling unit"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["active", "inactive", "dissolved"]
+            },
+            "establishmentDate": {
+              "type": ["string", "null"],
+              "format": "date",
+              "description": "ISO date of establishment"
+            },
+            "dissolutionDate": {
+              "type": ["string", "null"],
+              "format": "date",
+              "description": "ISO date of dissolution"
+            },
+            "location": {
+              "type": ["object", "null"],
+              "properties": {
+                "address": { "type": "string" },
+                "region": { "type": "string" },
+                "country": { "type": "string" }
+              }
+            },
+            "sources": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["source", "retrievedAt"],
+                "properties": {
+                  "source": {
+                    "type": "string",
+                    "enum": ["gov_uk_api", "ons_institutional_unit", "ons_non_institutional_unit"]
+                  },
+                  "sourceId": { "type": "string" },
+                  "retrievedAt": { 
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "url": { "type": "string" },
+                  "confidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                }
+              }
+            },
+            "lastUpdated": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "dataQuality": {
+              "type": "object",
+              "required": ["completeness", "hasConflicts", "requiresReview"],
+              "properties": {
+                "completeness": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "hasConflicts": { "type": "boolean" },
+                "conflictFields": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                },
+                "requiresReview": { "type": "boolean" },
+                "reviewReasons": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            },
+            "additionalProperties": {
+              "type": "object",
+              "description": "Unmapped fields from source systems"
+            }
+          }
+        }
+      },
+      "metadata": {
+        "type": "object",
+        "required": ["processedAt", "sources", "statistics"],
+        "properties": {
+          "processedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["source", "recordCount", "retrievedAt"],
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "enum": ["gov_uk_api", "ons_institutional_unit", "ons_non_institutional_unit"]
+                },
+                "recordCount": { "type": "integer" },
+                "retrievedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "errors": {
+                  "type": "array",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          },
+          "statistics": {
+            "type": "object",
+            "required": ["totalOrganisations", "duplicatesFound", "conflictsDetected"],
+            "properties": {
+              "totalOrganisations": { "type": "integer" },
+              "duplicatesFound": { "type": "integer" },
+              "conflictsDetected": { "type": "integer" },
+              "organisationsByType": {
+                "type": "object",
+                "additionalProperties": { "type": "integer" }
+              }
+            }
+          }
+        }
+      },
+      "conflicts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "organisationId": { "type": "string" },
+            "field": { "type": "string" },
+            "values": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "source": { "type": "string" },
+                  "value": {},
+                  "retrievedAt": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "errors": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "source": { "type": "string" },
+            "recordId": { "type": "string" },
+            "error": { "type": "string" },
+            "context": { "type": "object" },
+            "timestamp": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
