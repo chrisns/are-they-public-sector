@@ -27,7 +27,7 @@ describe('Full Aggregation Count Integration Test', () => {
     const orchestrator = new Orchestrator();
     
     // Run the full aggregation
-    await orchestrator.execute({
+    await orchestrator.run({
       skipGovUk: false,
       skipOns: false,
       outputPath: outputPath

@@ -6,7 +6,7 @@
 import XLSX from 'xlsx';
 import * as fs from 'fs';
 import { DataSourceType } from '../models/organisation.js';
-import type { GovUKOrganisation, ONSInstitutionalUnit, ONSNonInstitutionalUnit } from '../models/sources.js';
+import type { GovUKOrganisation } from '../models/sources.js';
 
 export interface ParseResult<T = any> {
   success: boolean;
@@ -91,6 +91,10 @@ export class SimpleParserService {
         if (workbook.SheetNames.includes(sheetName)) {
           console.log(`Processing ONS sheet: ${sheetName}`);
           const sheet = workbook.Sheets[sheetName];
+          if (!sheet) {
+            console.log(`  Warning: Sheet ${sheetName} not found`);
+            continue;
+          }
           
           // Get raw data to find where actual data starts
           const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
@@ -112,6 +116,10 @@ export class SimpleParserService {
           
           // Extract headers
           const headers = rawData[dataStartRow];
+          if (!headers) {
+            console.log(`  Warning: No headers found at row ${dataStartRow + 1}`);
+            continue;
+          }
           console.log(`  Headers found at row ${dataStartRow + 1}:`, headers.slice(0, 5));
           
           // Extract data rows

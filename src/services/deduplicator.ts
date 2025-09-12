@@ -129,7 +129,7 @@ export class DeduplicatorService {
       deduplicatedCount: deduplicatedOrganisations.length,
       mergedRecords,
       organisations: deduplicatedOrganisations,
-      conflicts: conflicts.length > 0 ? conflicts : undefined
+      ...(conflicts.length > 0 && { conflicts })
     };
   }
 

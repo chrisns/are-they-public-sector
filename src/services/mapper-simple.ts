@@ -5,8 +5,6 @@
 import type { Organisation } from '../models/organisation.js';
 import { OrganisationType, DataSourceType } from '../models/organisation.js';
 
-type OrganisationStatus = 'active' | 'inactive' | 'dissolved';
-
 export class SimpleMapperService {
   /**
    * Map GOV.UK organisation to standard format

@@ -10,13 +10,9 @@ import { performance } from 'perf_hooks';
 // Import services
 import {
   FetcherService,
-  ParserService,
-  MapperService,
   DeduplicatorService,
   WriterService,
   createFetcher,
-  createParser,
-  createMapper,
   createDeduplicator,
   createWriter
 } from '../services/index.js';
@@ -155,9 +151,7 @@ export class Orchestrator {
   private config: OrchestratorConfig;
   private logger: Logger;
   private fetcher: FetcherService;
-  private parser: ParserService;
   private simpleParser: SimpleParserService;
-  private mapper: MapperService;
   private simpleMapper: SimpleMapperService;
   private deduplicator: DeduplicatorService;
   private writer: WriterService;
@@ -186,15 +180,8 @@ export class Orchestrator {
       maxRetries: 3,
       retryDelay: 1000
     });
-
-    this.parser = createParser({
-      validateData: true
-    });
     
     this.simpleParser = createSimpleParser();
-
-    this.mapper = createMapper({});
-    
     this.simpleMapper = createSimpleMapper();
 
     this.deduplicator = createDeduplicator({
@@ -464,7 +451,7 @@ export class Orchestrator {
       const dedupResult = this.deduplicator.deduplicate(allOrganisations);
       
       this.logger.stopProgress(
-        `Deduplication complete: ${dedupResult.duplicatesFound} duplicates merged`
+        `Deduplication complete: ${dedupResult.originalCount - dedupResult.deduplicatedCount} duplicates merged`
       );
 
       // Track final memory usage
@@ -486,7 +473,7 @@ export class Orchestrator {
       // Calculate statistics
       const stats: ProcessingStatistics = {
         totalOrganisations: dedupResult.organisations.length,
-        duplicatesFound: dedupResult.duplicatesFound,
+        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
         conflictsDetected: 0,
         organisationsByType: {} as Record<OrganisationType, number>
       };
@@ -509,7 +496,7 @@ export class Orchestrator {
       this.logger.info('Summary:', {
         totalRecords: dedupResult.organisations.length,
         sources: sources,
-        duplicatesFound: dedupResult.duplicatesFound,
+        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
         processingTimeMs: Math.round(duration),
         peakMemoryMB: Math.round(this.peakMemory)
       });
@@ -689,9 +676,9 @@ export class Orchestrator {
       const dedupResult = this.deduplicator.deduplicate(allOrganisations);
       
       result.phases.deduplication = {
-        success: dedupResult.success,
-        duplicatesFound: dedupResult.duplicatesFound,
-        duplicatesResolved: dedupResult.duplicatesFound
+        success: true,
+        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
+        duplicatesResolved: dedupResult.originalCount - dedupResult.deduplicatedCount
       };
 
       // Phase 4: Output Generation
@@ -703,7 +690,7 @@ export class Orchestrator {
         sources: [],
         statistics: {
           totalOrganisations: dedupResult.organisations.length,
-          duplicatesFound: dedupResult.duplicatesFound,
+          duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
           conflictsDetected: 0,
           organisationsByType: {} as Record<OrganisationType, number>
         }
@@ -794,7 +781,7 @@ export class Orchestrator {
           sources: [],
           statistics: {
             totalOrganisations: recordCount,
-            duplicatesFound: result.phases.deduplication.duplicatesFound || 0,
+            duplicatesFound: result.phases.deduplication?.duplicatesFound || 0,
             conflictsDetected: 0,
             organisationsByType: {} as Record<OrganisationType, number>
           }
