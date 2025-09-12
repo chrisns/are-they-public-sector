@@ -82,6 +82,6 @@ temp/
 
 # rollup.js default build output
 dist/
-
+data
 # Uncomment the public line in if the project builds a library that exports TypeScript definitions
 # public/

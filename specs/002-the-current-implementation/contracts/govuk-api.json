@@ -1,0 +1,155 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "GOV.UK Organisations API",
+    "version": "1.0.0",
+    "description": "Contract for GOV.UK API returning 611 organisations"
+  },
+  "servers": [
+    {
+      "url": "https://www.gov.uk/api",
+      "description": "GOV.UK API"
+    }
+  ],
+  "paths": {
+    "/organisations": {
+      "get": {
+        "summary": "Get all organisations",
+        "description": "Returns paginated list of 611 UK government organisations",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrganisationsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrganisationsResponse": {
+        "type": "object",
+        "required": ["results", "total", "page", "pages"],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Organisation"
+            },
+            "minItems": 1,
+            "maxItems": 611,
+            "description": "Array of organisations (total 611 expected)"
+          },
+          "total": {
+            "type": "integer",
+            "example": 611,
+            "description": "Total number of organisations"
+          },
+          "page": {
+            "type": "integer",
+            "example": 1
+          },
+          "pages": {
+            "type": "integer",
+            "example": 7,
+            "description": "Total number of pages"
+          },
+          "page_size": {
+            "type": "integer",
+            "example": 100
+          },
+          "links": {
+            "type": "object",
+            "properties": {
+              "next": {
+                "type": "string",
+                "format": "uri",
+                "example": "/api/organisations?page=2"
+              },
+              "previous": {
+                "type": "string",
+                "format": "uri"
+              },
+              "self": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          }
+        }
+      },
+      "Organisation": {
+        "type": "object",
+        "required": ["title", "format"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Department for Education"
+          },
+          "format": {
+            "type": "string",
+            "enum": ["Organisation"],
+            "example": "Organisation"
+          },
+          "slug": {
+            "type": "string",
+            "example": "department-for-education"
+          },
+          "web_url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://www.gov.uk/government/organisations/department-for-education"
+          },
+          "details": {
+            "type": "object",
+            "properties": {
+              "abbreviation": {
+                "type": "string",
+                "example": "DfE"
+              },
+              "type": {
+                "type": "string",
+                "example": "Ministerial department"
+              },
+              "brand": {
+                "type": "string"
+              },
+              "logo": {
+                "type": "object"
+              }
+            }
+          },
+          "withdrawn": {
+            "type": "boolean",
+            "default": false
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "x-expected-counts": {
+    "total_organisations": 611,
+    "active_organisations": 550,
+    "withdrawn_organisations": 61
+  }
+}

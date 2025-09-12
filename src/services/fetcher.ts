@@ -74,27 +74,37 @@ export class FetcherService {
     const url = this.config.govUkApiUrl;
     
     try {
-      const response = await this.retryRequest(() => 
-        this.axiosInstance.get(url)
-      );
-      
       // GOV.UK API returns paginated results
       let allOrganisations: any[] = [];
       let currentUrl: string | null = url;
+      let pageCount = 0;
+      const maxPages = 100; // Safety limit to prevent infinite loops
       
-      while (currentUrl) {
+      console.log(`Fetching GOV.UK organisations from: ${url}`);
+      
+      while (currentUrl && pageCount < maxPages) {
         const pageResponse = await this.retryRequest(() => 
           this.axiosInstance.get(currentUrl!)
         );
         
         if (pageResponse.data?.results) {
           allOrganisations = allOrganisations.concat(pageResponse.data.results);
+          pageCount++;
+          
+          // Log progress
+          console.log(`  Page ${pageCount}: ${pageResponse.data.results.length} orgs (total: ${allOrganisations.length})`);
         }
         
         // Check for next page - the API returns next_page_url
         currentUrl = pageResponse.data?.next_page_url || null;
-        if (currentUrl === null) break;
+        
+        // Make sure URL is absolute
+        if (currentUrl && !currentUrl.startsWith('http')) {
+          currentUrl = `https://www.gov.uk${currentUrl}`;
+        }
       }
+      
+      console.log(`GOV.UK: Fetched ${allOrganisations.length} organisations across ${pageCount} pages`);
       
       return {
         success: true,

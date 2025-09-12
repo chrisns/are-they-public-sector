@@ -20,6 +20,8 @@ import {
   createDeduplicator,
   createWriter
 } from '../services/index.js';
+import { createSimpleParser, SimpleParserService } from '../services/parser-simple.js';
+import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simple.js';
 
 // Import models
 import type { Organisation } from '../models/organisation.js';
@@ -154,7 +156,9 @@ export class Orchestrator {
   private logger: Logger;
   private fetcher: FetcherService;
   private parser: ParserService;
+  private simpleParser: SimpleParserService;
   private mapper: MapperService;
+  private simpleMapper: SimpleMapperService;
   private deduplicator: DeduplicatorService;
   private writer: WriterService;
   private startTime: number = 0;
@@ -186,8 +190,12 @@ export class Orchestrator {
     this.parser = createParser({
       validateData: true
     });
+    
+    this.simpleParser = createSimpleParser();
 
     this.mapper = createMapper({});
+    
+    this.simpleMapper = createSimpleMapper();
 
     this.deduplicator = createDeduplicator({
       conflictResolutionStrategy: 'most_complete',
@@ -282,16 +290,16 @@ export class Orchestrator {
         return fetchResult;
       });
 
-      // Parse the data
+      // Parse the data using simple parser
       this.logger.startProgress('Parsing GOV.UK data...');
-      const parseResult = this.parser.parseGovUkJson(data.data);
+      const parseResult = this.simpleParser.parseGovUkJson(data.data);
       this.logger.stopProgress(`Parsed ${parseResult.data?.length || 0} GOV.UK organisations`);
 
-      // Map to standard format
+      // Map to standard format using simple mapper
       const mapped: Organisation[] = [];
       if (parseResult.data) {
         for (const org of parseResult.data) {
-          const mappedResult = this.mapper.mapGovUkOrganisation(org);
+          const mappedResult = this.simpleMapper.mapGovUkOrganisation(org);
           if (mappedResult.data) {
             mapped.push(mappedResult.data);
           }
@@ -354,9 +362,9 @@ export class Orchestrator {
       });
       this.logger.stopProgress('ONS Excel file downloaded');
 
-      // Parse Excel data
+      // Parse Excel data using simple parser
       this.logger.startProgress('Parsing ONS Excel data...');
-      const parseResult = this.parser.parseOnsExcel(excelPath);
+      const parseResult = this.simpleParser.parseOnsExcel(excelPath.filePath || excelPath);
       
       const institutionalData = parseResult.data?.institutional || [];
       const nonInstitutionalData = parseResult.data?.nonInstitutional || [];
@@ -365,10 +373,10 @@ export class Orchestrator {
         `Parsed ${institutionalData.length} institutional and ${nonInstitutionalData.length} non-institutional units`
       );
 
-      // Map to standard format
+      // Map to standard format using simple mapper
       const institutionalMapped: Organisation[] = [];
       for (const org of institutionalData) {
-        const mappedResult = this.mapper.mapOnsInstitutionalUnit(org);
+        const mappedResult = this.simpleMapper.mapOnsOrganisation(org);
         if (mappedResult.data) {
           institutionalMapped.push(mappedResult.data);
         }
@@ -376,7 +384,7 @@ export class Orchestrator {
 
       const nonInstitutionalMapped: Organisation[] = [];
       for (const org of nonInstitutionalData) {
-        const mappedResult = this.mapper.mapOnsNonInstitutionalUnit(org);
+        const mappedResult = this.simpleMapper.mapOnsOrganisation(org);
         if (mappedResult.data) {
           nonInstitutionalMapped.push(mappedResult.data);
         }

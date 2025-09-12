@@ -1,0 +1,122 @@
+{
+  "type": "excel",
+  "info": {
+    "title": "ONS Public Sector Classification Guide",
+    "version": "2025",
+    "description": "Excel file containing 3360 institutional and 57 non-institutional units"
+  },
+  "source": {
+    "url": "https://www.ons.gov.uk/economy/nationalaccounts/uksectoraccounts/datasets/publicsectorclassificationguide",
+    "fileFormat": "xlsx",
+    "expectedFileName": "pscg*.xlsx"
+  },
+  "sheets": [
+    {
+      "name": "Organisation|Institutional Unit",
+      "expectedRecords": 3360,
+      "description": "Public sector institutional units",
+      "columns": [
+        {
+          "name": "Organisation name",
+          "type": "string",
+          "required": true,
+          "description": "Full name of the organisation"
+        },
+        {
+          "name": "ONS code",
+          "type": "string",
+          "required": true,
+          "description": "Unique ONS identifier",
+          "pattern": "^[A-Z0-9]+$"
+        },
+        {
+          "name": "Classification",
+          "type": "string",
+          "required": false,
+          "description": "Public sector classification",
+          "examples": [
+            "Central government",
+            "Local government",
+            "Public corporation"
+          ]
+        },
+        {
+          "name": "Parent organisation",
+          "type": "string",
+          "required": false,
+          "description": "Name of parent organisation if applicable"
+        },
+        {
+          "name": "Start date",
+          "type": "string",
+          "required": false,
+          "format": "date",
+          "description": "Date organisation was established"
+        },
+        {
+          "name": "End date",
+          "type": "string",
+          "required": false,
+          "format": "date",
+          "description": "Date organisation was dissolved"
+        }
+      ],
+      "validation": {
+        "minRecords": 3360,
+        "maxRecords": 3360,
+        "uniqueField": "ONS code"
+      }
+    },
+    {
+      "name": "Non-Institutional Units",
+      "expectedRecords": 57,
+      "description": "Non-institutional public sector units",
+      "columns": [
+        {
+          "name": "Non-Institutional Unit name",
+          "type": "string",
+          "required": true,
+          "description": "Name of the non-institutional unit"
+        },
+        {
+          "name": "Sponsoring Entity",
+          "type": "string",
+          "required": false,
+          "description": "Organisation that sponsors this unit"
+        },
+        {
+          "name": "Classification",
+          "type": "string",
+          "required": false,
+          "description": "Type classification of the unit"
+        },
+        {
+          "name": "Status",
+          "type": "string",
+          "required": false,
+          "description": "Current status of the unit",
+          "examples": [
+            "Active",
+            "Inactive",
+            "Under review"
+          ]
+        }
+      ],
+      "validation": {
+        "minRecords": 57,
+        "maxRecords": 57,
+        "uniqueField": "Non-Institutional Unit name"
+      }
+    }
+  ],
+  "totals": {
+    "expectedTotalRecords": 3417,
+    "institutionalUnits": 3360,
+    "nonInstitutionalUnits": 57
+  },
+  "dataQuality": {
+    "requiredCompleteness": 0.95,
+    "allowedDuplicates": 0,
+    "encoding": "UTF-8"
+  }
+}
