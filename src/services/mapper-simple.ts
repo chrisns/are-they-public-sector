@@ -49,11 +49,11 @@ export class SimpleMapperService {
    */
   mapOnsOrganisation(source: any): { success: boolean; data?: Organisation } {
     try {
-      // Extract name - could be in various fields
-      const name = source['Organisation name'] || 
+      // Extract name - now in 'Organisation' field
+      const name = source['Organisation'] || 
+                   source['Organisation name'] || 
                    source['Name'] || 
                    source.name ||
-                   Object.values(source).find(v => typeof v === 'string' && v.length > 0) as string ||
                    'Unknown';
       
       const org: Organisation = {

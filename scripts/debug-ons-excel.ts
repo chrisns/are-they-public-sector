@@ -135,9 +135,8 @@ async function debugOnsExcel() {
     console.log('  - Exact sheet names shown above should be used in parser');
     console.log('  - Update parser.ts to match these exact names');
     
-    // Clean up
-    fs.unlinkSync(tempPath);
-    console.log('\n🧹 Temporary file cleaned up');
+    // Keep file for further analysis
+    console.log(`\n✓ File kept at: ${tempPath}`);
     
   } catch (error: any) {
     console.error('\n❌ Error:', error.message);

@@ -84,10 +84,7 @@ export class SimpleParserService {
       // Sheets that contain organizations
       const orgSheets = [
         'Central Government',
-        'Local Government',
-        'Public Corporations',
-        'ValidationLists',
-        'Index'
+        'Local Government'
       ];
       
       for (const sheetName of orgSheets) {
@@ -95,21 +92,53 @@ export class SimpleParserService {
           console.log(`Processing ONS sheet: ${sheetName}`);
           const sheet = workbook.Sheets[sheetName];
           
-          // Convert to JSON - this will give us all the data
-          const jsonData = XLSX.utils.sheet_to_json(sheet, { 
-            raw: false,
-            defval: null
-          });
+          // Get raw data to find where actual data starts
+          const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
           
-          console.log(`  Found ${jsonData.length} rows in ${sheetName}`);
-          
-          // Add source info to each record
-          jsonData.forEach((row: any) => {
-            if (row && Object.keys(row).length > 0) {
-              row._source_sheet = sheetName;
-              allOrganizations.push(row);
+          // Skip header rows (usually first 4-5 rows are metadata)
+          let dataStartRow = -1;
+          for (let i = 0; i < Math.min(10, rawData.length); i++) {
+            const row = rawData[i];
+            if (row && row[0] === 'Organisation') {
+              dataStartRow = i;
+              break;
             }
-          });
+          }
+          
+          if (dataStartRow === -1) {
+            console.log(`  Warning: Could not find 'Organisation' header in ${sheetName}`);
+            continue;
+          }
+          
+          // Extract headers
+          const headers = rawData[dataStartRow];
+          console.log(`  Headers found at row ${dataStartRow + 1}:`, headers.slice(0, 5));
+          
+          // Extract data rows
+          let orgCount = 0;
+          for (let i = dataStartRow + 1; i < rawData.length; i++) {
+            const row = rawData[i];
+            if (row && row[0]) { // Check if first column (Organisation name) exists
+              const orgName = row[0];
+              if (typeof orgName === 'string' && orgName.trim().length > 0) {
+                const org: any = {
+                  'Organisation': orgName,
+                  '_source_sheet': sheetName
+                };
+                
+                // Add other columns if they exist
+                if (row[1]) org['Which is a subsidiary of'] = row[1];
+                if (row[2]) org['Which is a subsidiary of (2)'] = row[2];
+                if (row[3]) org['Sponsoring Entity'] = row[3];
+                if (row[4]) org['Sub Category'] = row[4];
+                
+                allOrganizations.push(org);
+                orgCount++;
+              }
+            }
+          }
+          
+          console.log(`  Found ${orgCount} organizations in ${sheetName}`);
         }
       }
       

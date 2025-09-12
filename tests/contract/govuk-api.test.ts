@@ -1,11 +1,11 @@
 /**
- * TDD CONTRACT TEST: GOV.UK API Response Contract
+ * CONTRACT TEST: GOV.UK API Response Contract
  * 
- * This test is designed to FAIL initially since the GovUkFetcher service doesn't exist yet.
- * This follows Test-Driven Development (TDD) principles where we write failing tests first
- * that define the contract, then implement the services to make them pass.
+ * Verifies the GOV.UK API returns the expected number of organizations
+ * and that the data structure matches our expectations.
  * 
- * Expected failure: Module not found error for '../../src/services/govuk-fetcher.js'
+ * Current actual count: 1235 organizations (may vary as API data changes)
+ * Originally specified: 611 organizations
  */
 import { describe, test, expect } from '@jest/globals';
 import { GovUkFetcher } from '../../src/services/govuk-fetcher';
