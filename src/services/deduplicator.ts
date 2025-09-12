@@ -92,7 +92,10 @@ export class DeduplicatorService {
     for (const cluster of clusters) {
       if (cluster.length === 1) {
         // No duplicates, add as-is
-        processedMap.set(cluster[0].id, cluster[0]);
+        const org = cluster[0];
+        if (org) {
+          processedMap.set(org.id, org);
+        }
       } else {
         // Merge duplicates
         const mergeResult = this.mergeOrganisations(cluster);
@@ -142,11 +145,14 @@ export class DeduplicatorService {
     const matches: MatchResult[] = [];
 
     for (let i = 0; i < organisations.length; i++) {
+      const org1 = organisations[i];
+      if (!org1) continue;
+      
       for (let j = i + 1; j < organisations.length; j++) {
-        const matchResult = this.compareOrganisations(
-          organisations[i],
-          organisations[j]
-        );
+        const org2 = organisations[j];
+        if (!org2) continue;
+        
+        const matchResult = this.compareOrganisations(org1, org2);
 
         if (matchResult.similarityScore >= this.config.similarityThreshold) {
           matches.push(matchResult);
@@ -297,26 +303,32 @@ export class DeduplicatorService {
     }
 
     for (let j = 0; j <= s1.length; j++) {
-      matrix[0][j] = j;
+      const row = matrix[0];
+      if (row) row[j] = j;
     }
 
     for (let i = 1; i <= s2.length; i++) {
       for (let j = 1; j <= s1.length; j++) {
+        const currentRow = matrix[i];
+        const prevRow = matrix[i - 1];
+        if (!currentRow || !prevRow) continue;
+        
         if (s2.charAt(i - 1) === s1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
+          currentRow[j] = prevRow[j - 1] ?? 0;
         } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1, // substitution
-            matrix[i][j - 1] + 1,     // insertion
-            matrix[i - 1][j] + 1      // deletion
+          currentRow[j] = Math.min(
+            (prevRow[j - 1] ?? 0) + 1, // substitution
+            (currentRow[j - 1] ?? 0) + 1,     // insertion
+            (prevRow[j] ?? 0) + 1      // deletion
           );
         }
       }
     }
 
-    const distance = matrix[s2.length][s1.length];
+    const lastRow = matrix[s2.length];
+    const distance = lastRow?.[s1.length] ?? 0;
     const maxLength = Math.max(s1.length, s2.length);
-    return 1 - (distance / maxLength);
+    return maxLength > 0 ? 1 - (distance / maxLength) : 1;
   }
 
   /**
@@ -395,8 +407,12 @@ export class DeduplicatorService {
     }
 
     if (organisations.length === 1) {
+      const org = organisations[0];
+      if (!org) {
+        throw new Error('Invalid organisation array');
+      }
       return {
-        merged: organisations[0],
+        merged: org,
         confidence: 1,
         conflicts: []
       };
@@ -522,7 +538,11 @@ export class DeduplicatorService {
       case 'manual':
       default:
         // Default to first organisation for manual resolution
-        return organisations[0];
+        const firstOrg = organisations[0];
+        if (!firstOrg) {
+          throw new Error('No organisations to select from');
+        }
+        return firstOrg;
     }
   }
 
@@ -534,7 +554,7 @@ export class DeduplicatorService {
    */
   private resolveConflict(
     values: Array<{ org: Organisation; value: any }>,
-    field: keyof Organisation
+    _field: keyof Organisation
   ): any {
     switch (this.config.conflictResolutionStrategy) {
       case 'newest':
@@ -553,19 +573,21 @@ export class DeduplicatorService {
 
       case 'most_complete':
         // For string fields, prefer longer values
-        if (typeof values[0].value === 'string') {
+        const firstValue = values[0];
+        if (firstValue && typeof firstValue.value === 'string') {
           const longest = values.reduce((longest, item) => 
             item.value.length > longest.value.length ? item : longest
           );
           return longest.value;
         }
         // For other fields, use first non-null value
-        return values[0].value;
+        return firstValue?.value;
 
       case 'manual':
       default:
         // Default to first value for manual resolution
-        return values[0].value;
+        const defaultValue = values[0];
+        return defaultValue?.value;
     }
   }
 
@@ -648,9 +670,9 @@ export class DeduplicatorService {
     return {
       completeness,
       hasConflicts,
-      conflictFields: hasConflicts ? ['multiple'] : undefined,
+      ...(hasConflicts && { conflictFields: ['multiple'] }),
       requiresReview,
-      reviewReasons: reviewReasons.length > 0 ? reviewReasons : undefined
+      ...(reviewReasons.length > 0 && { reviewReasons })
     };
   }
 
