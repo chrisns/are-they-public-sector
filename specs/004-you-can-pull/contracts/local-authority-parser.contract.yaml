@@ -1,0 +1,101 @@
+openapi: 3.0.0
+info:
+  title: Local Authority Parser Contract
+  version: 1.0.0
+  description: Contract for parsing Local Authorities from DEFRA UK-AIR
+
+paths:
+  /parse:
+    post:
+      summary: Parse Local Authorities from HTML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: "https://uk-air.defra.gov.uk/links?view=la"
+      responses:
+        '200':
+          description: Successfully parsed Local Authorities
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - authorities
+                  - count
+                  - timestamp
+                properties:
+                  authorities:
+                    type: array
+                    minItems: 300
+                    items:
+                      type: object
+                      required:
+                        - name
+                        - code
+                        - type
+                        - url
+                      properties:
+                        name:
+                          type: string
+                          minLength: 1
+                          example: "Aberdeen City Council"
+                        code:
+                          type: string
+                          pattern: "^[a-z0-9-]+$"
+                          example: "aberdeen-city-council-aberdeencity-gov-uk"
+                        type:
+                          type: string
+                          enum:
+                            - county
+                            - district
+                            - borough
+                            - city
+                            - unitary
+                        url:
+                          type: string
+                          format: uri
+                          example: "https://www.aberdeencity.gov.uk"
+                  count:
+                    type: integer
+                    minimum: 300
+                    example: 408
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          description: Source URL not accessible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to fetch DEFRA UK-AIR Local Authorities page"
+                  code:
+                    type: string
+                    example: "FETCH_ERROR"
+        '422':
+          description: HTML structure changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unable to parse Local Authorities - structure changed"
+                  code:
+                    type: string
+                    example: "PARSE_ERROR"
+                  details:
+                    type: string

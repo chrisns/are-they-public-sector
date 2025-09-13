@@ -4,13 +4,14 @@ A TypeScript CLI tool that aggregates UK public sector organisation data from mu
 
 ## Features
 
-- **Multi-Source Data Aggregation**: Fetches from GOV.UK API and ONS Excel files
+- **Multi-Source Data Aggregation**: Fetches from GOV.UK API, ONS Excel files, NHS Provider Directory, and DEFRA Local Authorities
 - **Intelligent Field Mapping**: Configuration-driven mapping between source and target schemas  
 - **Deduplication & Conflict Resolution**: Identifies and merges duplicate records across sources
 - **Data Quality Assessment**: Calculates completeness scores and flags potential issues
 - **Stream Processing**: Handles large datasets (100k+ records) efficiently
 - **Comprehensive Testing**: 80% test coverage with unit, integration, and performance tests
 - **Error Recovery**: Robust error handling with retry mechanisms and graceful failures
+- **HTML Scraping**: Extracts NHS Trusts and Local Authorities from web pages using cheerio
 
 ## Quick Start
 
@@ -30,8 +31,14 @@ pnpm install
 ### Basic Usage
 
 ```bash
-# Run the aggregator
+# Run the aggregator for all sources
 pnpm run compile
+
+# Run for specific sources
+pnpm run compile -- --source nhs-provider-directory
+pnpm run compile -- --source defra-uk-air
+pnpm run compile -- --source govuk
+pnpm run compile -- --source ons
 
 # Output will be generated at dist/orgs.json
 ```
@@ -66,6 +73,16 @@ pnpm lint
 - **URL**: `https://www.ons.gov.uk/economy/nationalaccounts/uksectoraccounts/datasets/publicsectorclassificationguide`
 - **Format**: Excel (2 tabs)
 - **Contains**: Institutional and non-institutional public sector units
+
+### 3. NHS Provider Directory
+- **URL**: `https://www.england.nhs.uk/publication/nhs-provider-directory/`
+- **Format**: HTML (scraped)
+- **Contains**: NHS Trusts and NHS Foundation Trusts (~215 organisations)
+
+### 4. DEFRA UK-AIR Local Authorities
+- **URL**: `https://uk-air.defra.gov.uk/links?view=la`
+- **Format**: HTML (scraped)
+- **Contains**: UK Local Authorities including County, District, Borough, City Councils and Unitary Authorities (~408 organisations)
 
 ## Architecture
 

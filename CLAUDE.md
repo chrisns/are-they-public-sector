@@ -8,7 +8,7 @@ UK Public Sector Organisation Aggregator - A TypeScript CLI tool that aggregates
 - **Runtime**: Node.js 18+ with tsx
 - **Package Manager**: pnpm
 - **Testing**: Jest with ts-jest (80% coverage required)
-- **Key Dependencies**: axios, xlsx, commander (minimal dependencies policy)
+- **Key Dependencies**: axios, xlsx, commander, cheerio (minimal dependencies policy)
 
 ## Commands
 ```bash
@@ -41,28 +41,29 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Fixing aggregator to return correct organization counts:
-- GOV.UK API: Should return 611 (currently 0)
-- ONS Institutional Units: Should return 3360 (currently 0)
-- ONS Non-Institutional Units: Should return 57 (currently 0)
+Adding NHS Trusts and Local Authorities data sources:
+- NHS Provider Directory: ~215 trusts (HTML scraping with cheerio)
+- DEFRA UK-AIR Local Authorities: ~408 authorities (HTML scraping)
+- New parsers: nhs-parser.ts, local-authority-parser.ts
+- Fail-fast on source unavailability or format changes
 
 ## Key Files
-- `specs/002-the-current-implementation/spec.md` - Fix specification
-- `specs/002-the-current-implementation/plan.md` - Implementation plan
-- `specs/002-the-current-implementation/research.md` - Root cause analysis
-- `src/services/fetcher.ts` - Needs pagination fix for GOV.UK
-- `src/services/parser.ts` - Needs sheet name matching fix
+- `specs/004-you-can-pull/spec.md` - NHS/LA feature specification
+- `specs/004-you-can-pull/plan.md` - Implementation plan
+- `specs/004-you-can-pull/contracts/` - Parser contracts
+- `src/services/nhs-parser.ts` - NHS Trust HTML parser (NEW)
+- `src/services/local-authority-parser.ts` - LA HTML parser (NEW)
 
 ## Development Notes
-- Issue: API pagination using wrong field names
-- Issue: Excel sheet pattern matching too strict
-- Issue: ONS scraper finding old .xls instead of .xlsx
-- Solution: Fix pagination, update sheet patterns, improve scraping
+- HTML scraping using cheerio for jQuery-like API
+- Fail-fast approach for nightly runs
+- Foundation Trusts identified by "Foundation" in name
+- Local Authority types inferred from council name patterns
 
 ## Recent Changes
-- Branch 002-the-current-implementation: Fixing count discrepancies
-- Identified root causes in fetcher and parser services
-- Created contracts for expected data counts
+- Branch 004-you-can-pull: Adding NHS Trusts and Local Authorities
+- Created HTML parsers with cheerio for new data sources
+- Implemented fail-fast error handling for format changes
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

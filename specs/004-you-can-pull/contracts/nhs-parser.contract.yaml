@@ -1,0 +1,97 @@
+openapi: 3.0.0
+info:
+  title: NHS Parser Contract
+  version: 1.0.0
+  description: Contract for parsing NHS Trusts from NHS Provider Directory
+
+paths:
+  /parse:
+    post:
+      summary: Parse NHS Trusts from HTML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: "https://www.england.nhs.uk/publication/nhs-provider-directory/"
+      responses:
+        '200':
+          description: Successfully parsed NHS Trusts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - trusts
+                  - count
+                  - timestamp
+                properties:
+                  trusts:
+                    type: array
+                    minItems: 100
+                    items:
+                      type: object
+                      required:
+                        - name
+                        - code
+                        - type
+                      properties:
+                        name:
+                          type: string
+                          minLength: 1
+                          example: "Guy's and St Thomas' NHS Foundation Trust"
+                        code:
+                          type: string
+                          pattern: "^[a-z0-9-]+$"
+                          example: "guys-and-st-thomas-nhs-foundation-trust"
+                        type:
+                          type: string
+                          enum:
+                            - trust
+                            - foundation-trust
+                        url:
+                          type: string
+                          format: uri
+                          nullable: true
+                  count:
+                    type: integer
+                    minimum: 100
+                    example: 215
+                  timestamp:
+                    type: string
+                    format: date-time
+        '404':
+          description: Source URL not accessible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to fetch NHS Provider Directory"
+                  code:
+                    type: string
+                    example: "FETCH_ERROR"
+        '422':
+          description: HTML structure changed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unable to parse NHS Provider Directory - structure changed"
+                  code:
+                    type: string
+                    example: "PARSE_ERROR"
+                  details:
+                    type: string

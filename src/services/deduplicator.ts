@@ -56,9 +56,13 @@ const DEFAULT_CONFIG: Required<DeduplicatorConfig> = {
  */
 export class DeduplicatorService {
   private config: Required<DeduplicatorConfig>;
+  private similarityCache: Map<string, number>;
+  private processedComparisons: Set<string>;
 
   constructor(config: DeduplicatorConfig = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this.similarityCache = new Map();
+    this.processedComparisons = new Set();
   }
 
   /**
@@ -82,8 +86,12 @@ export class DeduplicatorService {
     const processedMap = new Map<string, Organisation>();
     const processedIds = new Set<string>();
 
+    console.log(`[Deduplicator] Starting deduplication of ${originalCount} organisations...`);
+    
     // Find all matches
     const matches = this.findAllMatches(organisations);
+    
+    console.log(`[Deduplicator] Found ${matches.length} potential matches`);
 
     // Group matches into clusters
     const clusters = this.clusterMatches(matches, organisations);
@@ -143,23 +151,70 @@ export class DeduplicatorService {
    */
   private findAllMatches(organisations: Organisation[]): MatchResult[] {
     const matches: MatchResult[] = [];
-
-    for (let i = 0; i < organisations.length; i++) {
-      const org1 = organisations[i];
-      if (!org1) continue;
+    
+    // Group organizations by type to reduce comparisons
+    const orgsByType = new Map<string, Organisation[]>();
+    for (const org of organisations) {
+      const key = `${org.type}-${org.classification || 'unknown'}`;
+      if (!orgsByType.has(key)) {
+        orgsByType.set(key, []);
+      }
+      orgsByType.get(key)?.push(org);
+    }
+    
+    console.log(`[Deduplicator] Grouped into ${orgsByType.size} type groups`);
+    let comparisonCount = 0;
+    let skippedCount = 0;
+    
+    // Compare within each type group
+    for (const [typeKey, orgs] of orgsByType) {
+      console.log(`[Deduplicator] Comparing ${orgs.length} organisations in group ${typeKey}`);
       
-      for (let j = i + 1; j < organisations.length; j++) {
-        const org2 = organisations[j];
-        if (!org2) continue;
+      // Skip very large groups or limit comparisons
+      const maxGroupSize = 100; // Limit group size for performance
+      const orgsToCompare = orgs.length > maxGroupSize ? orgs.slice(0, maxGroupSize) : orgs;
+      
+      if (orgs.length > maxGroupSize) {
+        console.log(`[Deduplicator] WARNING: Group ${typeKey} has ${orgs.length} orgs, limiting to first ${maxGroupSize} for performance`);
+      }
+      
+      for (let i = 0; i < orgsToCompare.length; i++) {
+        const org1 = orgsToCompare[i];
+        if (!org1) continue;
         
-        const matchResult = this.compareOrganisations(org1, org2);
+        // Limit comparisons per organization
+        let comparisonsForOrg = 0;
+        const maxComparisonsPerOrg = 50; // Limit comparisons per org
+        
+        for (let j = i + 1; j < orgsToCompare.length && comparisonsForOrg < maxComparisonsPerOrg; j++) {
+          const org2 = orgsToCompare[j];
+          if (!org2) continue;
+          
+          // Skip if we've already compared these
+          const comparisonKey = org1.id < org2.id ? `${org1.id}|${org2.id}` : `${org2.id}|${org1.id}`;
+          if (this.processedComparisons.has(comparisonKey)) {
+            skippedCount++;
+            continue;
+          }
+          this.processedComparisons.add(comparisonKey);
+          
+          comparisonCount++;
+          comparisonsForOrg++;
+          
+          if (comparisonCount % 1000 === 0) {
+            console.log(`[Deduplicator] Progress: ${comparisonCount} comparisons, ${matches.length} matches found`);
+          }
+          
+          const matchResult = this.compareOrganisations(org1, org2);
 
-        if (matchResult.similarityScore >= this.config.similarityThreshold) {
-          matches.push(matchResult);
+          if (matchResult.similarityScore >= this.config.similarityThreshold) {
+            matches.push(matchResult);
+          }
         }
       }
     }
-
+    
+    console.log(`[Deduplicator] Completed ${comparisonCount} comparisons (${skippedCount} skipped), found ${matches.length} matches`);
     return matches;
   }
 
@@ -174,6 +229,32 @@ export class DeduplicatorService {
     const conflictingFields: string[] = [];
     let totalScore = 0;
     let maxScore = 0;
+
+    // Early exit: If sources are different and types are very different, skip
+    if (org1.type !== org2.type && org1.classification !== org2.classification) {
+      return {
+        organisation1: org1,
+        organisation2: org2,
+        similarityScore: 0,
+        matchedFields: [],
+        isExactMatch: false
+      };
+    }
+    
+    // Quick name check first (most common match criteria)
+    if (org1.name && org2.name) {
+      const nameSimilarity = this.calculateStringSimilarity(org1.name, org2.name);
+      // If names are very different, skip the rest
+      if (nameSimilarity < 0.3) {
+        return {
+          organisation1: org1,
+          organisation2: org2,
+          similarityScore: nameSimilarity,
+          matchedFields: [],
+          isExactMatch: false
+        };
+      }
+    }
 
     // Check exact match fields
     for (const field of this.config.exactMatchFields) {
@@ -294,6 +375,21 @@ export class DeduplicatorService {
 
     if (s1 === s2) return 1;
     if (s1.length === 0 || s2.length === 0) return 0;
+    
+    // Check cache
+    const cacheKey = s1 < s2 ? `${s1}|${s2}` : `${s2}|${s1}`;
+    const cached = this.similarityCache.get(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+    
+    // Early exit for very different lengths
+    const lengthDiff = Math.abs(s1.length - s2.length);
+    const maxLength = Math.max(s1.length, s2.length);
+    if (lengthDiff / maxLength > 0.5) {
+      this.similarityCache.set(cacheKey, 0);
+      return 0;
+    }
 
     // Calculate Levenshtein distance
     const matrix: number[][] = [];
@@ -327,8 +423,12 @@ export class DeduplicatorService {
 
     const lastRow = matrix[s2.length];
     const distance = lastRow?.[s1.length] ?? 0;
-    const maxLength = Math.max(s1.length, s2.length);
-    return maxLength > 0 ? 1 - (distance / maxLength) : 1;
+    const similarity = maxLength > 0 ? 1 - (distance / maxLength) : 1;
+    
+    // Cache the result
+    this.similarityCache.set(cacheKey, similarity);
+    
+    return similarity;
   }
 
   /**
