@@ -14,7 +14,7 @@ export class SchoolsParser {
   private readonly baseUrl = 'https://get-information-schools.service.gov.uk/Establishments/Search/results-json';
   private readonly defaultOptions: Required<SchoolsParserOptions> = {
     searchTerm: 'e',  // 'e' returns most comprehensive results
-    delayMs: 500,
+    delayMs: 100,  // Reduced from 500ms for 5x faster fetching
     maxRetries: 5,
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   };
