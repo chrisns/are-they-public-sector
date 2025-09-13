@@ -23,20 +23,18 @@ export class DevolvedAdminParser {
   };
 
   constructor() {
-    // Resolve path relative to the module location
-    // Use a more compatible approach for both Jest and runtime
-    const currentDir = __dirname || process.cwd();
+    // Use process.cwd() which works in both ESM and CommonJS
+    // The data file is always relative to the project root
+    this.dataPath = path.join(process.cwd(), 'src', 'data', 'devolved-administrations.json');
     
-    // Try multiple paths to find the data file
-    const possiblePaths = [
-      path.join(currentDir, '..', 'data', 'devolved-administrations.json'),
-      path.join(currentDir, 'src', 'data', 'devolved-administrations.json'),
-      path.join(process.cwd(), 'src', 'data', 'devolved-administrations.json'),
-      path.join(process.cwd(), 'dist', 'data', 'devolved-administrations.json')
-    ];
-    
-    // Find the first existing path
-    this.dataPath = possiblePaths.find(p => fs.existsSync(p)) || possiblePaths[2];
+    // Verify the file exists
+    if (!fs.existsSync(this.dataPath)) {
+      // Try alternative path for compiled version
+      const altPath = path.join(process.cwd(), 'dist', 'data', 'devolved-administrations.json');
+      if (fs.existsSync(altPath)) {
+        this.dataPath = altPath;
+      }
+    }
   }
 
   /**
