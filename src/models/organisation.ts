@@ -27,7 +27,9 @@ export enum OrganisationType {
 export enum DataSourceType {
   GOV_UK_API = 'gov_uk_api',
   ONS_INSTITUTIONAL = 'ons_institutional_unit',
-  ONS_NON_INSTITUTIONAL = 'ons_non_institutional_unit'
+  ONS_NON_INSTITUTIONAL = 'ons_non_institutional_unit',
+  NHS_PROVIDER_DIRECTORY = 'nhs_provider_directory',
+  DEFRA_UK_AIR = 'defra_uk_air'
 }
 
 /**

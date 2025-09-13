@@ -28,6 +28,7 @@ interface CliOptions {
   output?: string;
   logFile?: string;
   quiet?: boolean;
+  source?: string;
 }
 
 /**
@@ -46,6 +47,7 @@ function createCli(): Command {
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
     .option('-l, --log-file <path>', 'Log to file in addition to console')
     .option('-q, --quiet', 'Suppress all output except errors', false)
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -58,6 +60,7 @@ function createCli(): Command {
     .option('-d, --debug', 'Enable debug mode', false)
     .option('-t, --timeout <ms>', 'Request timeout in milliseconds', '30000')
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -146,13 +149,19 @@ async function runAggregation(options: CliOptions): Promise<void> {
     }
 
     // Create orchestrator
-    const orchestrator = createOrchestrator({
+    const orchestratorConfig: any = {
       cacheEnabled: !!options.cache,
       debugMode: !!options.debug,
       timeout,
       outputPath,
       logger
-    });
+    };
+    
+    if (options.source) {
+      orchestratorConfig.source = options.source;
+    }
+    
+    const orchestrator = createOrchestrator(orchestratorConfig);
 
     // Run aggregation
     logger.section('Starting Aggregation Process');

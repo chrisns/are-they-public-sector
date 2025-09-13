@@ -18,6 +18,10 @@ import {
 } from '../services/index.js';
 import { createSimpleParser, SimpleParserService } from '../services/parser-simple.js';
 import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simple.js';
+import { NHSParser } from '../services/nhs-parser.js';
+import { LocalAuthorityParser } from '../services/local-authority-parser.js';
+import { NHSMapper } from '../services/mappers/nhs-mapper.js';
+import { LocalAuthorityMapper } from '../services/mappers/local-authority-mapper.js';
 
 // Import models
 import type { Organisation } from '../models/organisation.js';
@@ -42,6 +46,7 @@ export interface OrchestratorConfig {
   timeout?: number;
   outputPath?: string;
   logger?: Logger;
+  source?: string;
 }
 
 /**
@@ -155,6 +160,10 @@ export class Orchestrator {
   private simpleMapper: SimpleMapperService;
   private deduplicator: DeduplicatorService;
   private writer: WriterService;
+  private nhsParser: NHSParser;
+  private localAuthorityParser: LocalAuthorityParser;
+  private nhsMapper: NHSMapper;
+  private localAuthorityMapper: LocalAuthorityMapper;
   private startTime: number = 0;
   private peakMemory: number = 0;
 
@@ -194,6 +203,12 @@ export class Orchestrator {
       prettyPrint: true,
       includeMetadata: true
     });
+    
+    // Initialize NHS and Local Authority parsers
+    this.nhsParser = new NHSParser();
+    this.localAuthorityParser = new LocalAuthorityParser();
+    this.nhsMapper = new NHSMapper();
+    this.localAuthorityMapper = new LocalAuthorityMapper();
   }
 
   /**
@@ -404,6 +419,88 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch NHS Trust data
+   */
+  async fetchNHSData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching NHS Trust data');
+    
+    try {
+      const url = 'https://www.england.nhs.uk/publication/nhs-provider-directory/';
+      
+      this.logger.startProgress('Fetching NHS Provider Directory...');
+      const parseResult = await this.nhsParser.parse(url);
+      this.logger.stopProgress(`Fetched ${parseResult.count} NHS Trusts`);
+      
+      // Map to Organisation model
+      this.logger.startProgress('Mapping NHS Trusts to organisation model...');
+      const mapped = this.nhsMapper.mapMultiple(parseResult.trusts);
+      this.logger.stopProgress(`Mapped ${mapped.length} NHS organisations`);
+      
+      return {
+        success: true,
+        data: { organisations: mapped },
+        organisations: mapped,
+        metadata: {
+          source: 'nhs-provider-directory',
+          fetchedAt: parseResult.timestamp,
+          count: mapped.length
+        }
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch NHS data', error);
+      return {
+        success: false,
+        metadata: {
+          source: 'nhs-provider-directory',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error as Error
+      };
+    }
+  }
+  
+  /**
+   * Fetch Local Authority data
+   */
+  async fetchLocalAuthorityData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Local Authority data');
+    
+    try {
+      const url = 'https://uk-air.defra.gov.uk/links?view=la';
+      
+      this.logger.startProgress('Fetching DEFRA UK-AIR Local Authorities...');
+      const parseResult = await this.localAuthorityParser.parse(url);
+      this.logger.stopProgress(`Fetched ${parseResult.count} Local Authorities`);
+      
+      // Map to Organisation model
+      this.logger.startProgress('Mapping Local Authorities to organisation model...');
+      const mapped = this.localAuthorityMapper.mapMultiple(parseResult.authorities);
+      this.logger.stopProgress(`Mapped ${mapped.length} Local Authority organisations`);
+      
+      return {
+        success: true,
+        data: { organisations: mapped },
+        organisations: mapped,
+        metadata: {
+          source: 'defra-uk-air',
+          fetchedAt: parseResult.timestamp,
+          count: mapped.length
+        }
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch Local Authority data', error);
+      return {
+        success: false,
+        metadata: {
+          source: 'defra-uk-air',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error as Error
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -417,28 +514,58 @@ export class Orchestrator {
     const errors: Error[] = [];
 
     try {
+      const sourceFilter = this.config.source?.toLowerCase();
+      
       // Fetch GOV.UK data
-      const govUkResult = await this.fetchGovUkData();
-      if (govUkResult.success && govUkResult.organisations) {
-        allOrganisations.push(...govUkResult.organisations);
-        sources.push('gov.uk-api');
-        this.logger.success(`Added ${govUkResult.organisations.length} GOV.UK organisations`);
-      } else {
-        errors.push(govUkResult.error || new Error('GOV.UK fetch failed'));
+      if (!sourceFilter || sourceFilter === 'govuk' || sourceFilter === 'gov-uk') {
+        const govUkResult = await this.fetchGovUkData();
+        if (govUkResult.success && govUkResult.organisations) {
+          allOrganisations.push(...govUkResult.organisations);
+          sources.push('gov.uk-api');
+          this.logger.success(`Added ${govUkResult.organisations.length} GOV.UK organisations`);
+        } else {
+          errors.push(govUkResult.error || new Error('GOV.UK fetch failed'));
+        }
       }
 
       // Fetch ONS data
-      const onsResult = await this.fetchOnsData();
-      if (onsResult.success) {
-        allOrganisations.push(...onsResult.institutionalUnits);
-        allOrganisations.push(...onsResult.nonInstitutionalUnits);
-        sources.push('ons-institutional-units', 'ons-non-institutional-units');
-        this.logger.success(
-          `Added ${onsResult.institutionalUnits.length} institutional and ` +
-          `${onsResult.nonInstitutionalUnits.length} non-institutional ONS units`
-        );
-      } else {
-        errors.push(onsResult.error || new Error('ONS fetch failed'));
+      if (!sourceFilter || sourceFilter === 'ons') {
+        const onsResult = await this.fetchOnsData();
+        if (onsResult.success) {
+          allOrganisations.push(...onsResult.institutionalUnits);
+          allOrganisations.push(...onsResult.nonInstitutionalUnits);
+          sources.push('ons-institutional-units', 'ons-non-institutional-units');
+          this.logger.success(
+            `Added ${onsResult.institutionalUnits.length} institutional and ` +
+            `${onsResult.nonInstitutionalUnits.length} non-institutional ONS units`
+          );
+        } else {
+          errors.push(onsResult.error || new Error('ONS fetch failed'));
+        }
+      }
+      
+      // Fetch NHS Trust data
+      if (!sourceFilter || sourceFilter === 'nhs-provider-directory' || sourceFilter === 'nhs') {
+        const nhsResult = await this.fetchNHSData();
+        if (nhsResult.success && nhsResult.organisations) {
+          allOrganisations.push(...nhsResult.organisations);
+          sources.push('nhs-provider-directory');
+          this.logger.success(`Added ${nhsResult.organisations.length} NHS Trusts`);
+        } else {
+          errors.push(nhsResult.error || new Error('NHS fetch failed'));
+        }
+      }
+      
+      // Fetch Local Authority data
+      if (!sourceFilter || sourceFilter === 'defra-uk-air' || sourceFilter === 'defra' || sourceFilter === 'la') {
+        const laResult = await this.fetchLocalAuthorityData();
+        if (laResult.success && laResult.organisations) {
+          allOrganisations.push(...laResult.organisations);
+          sources.push('defra-uk-air');
+          this.logger.success(`Added ${laResult.organisations.length} Local Authorities`);
+        } else {
+          errors.push(laResult.error || new Error('Local Authority fetch failed'));
+        }
       }
 
       // Track memory after fetching
@@ -656,12 +783,30 @@ export class Orchestrator {
         ...(onsData.error && { error: onsData.error }),
         recordCount: onsData.nonInstitutionalUnits.length
       };
+      
+      // Fetch NHS Trusts
+      const nhsData = await this.fetchNHSData();
+      result.phases.dataFetching.nhsTrusts = {
+        success: nhsData.success,
+        ...(nhsData.error && { error: nhsData.error }),
+        recordCount: nhsData.organisations?.length || 0
+      };
+      
+      // Fetch Local Authorities
+      const laData = await this.fetchLocalAuthorityData();
+      result.phases.dataFetching.localAuthorities = {
+        success: laData.success,
+        ...(laData.error && { error: laData.error }),
+        recordCount: laData.organisations?.length || 0
+      };
 
       // Combine all organisations
       const allOrganisations = [
         ...(govUkData.organisations || []),
         ...onsData.institutionalUnits,
-        ...onsData.nonInstitutionalUnits
+        ...onsData.nonInstitutionalUnits,
+        ...(nhsData.organisations || []),
+        ...(laData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)
@@ -687,7 +832,7 @@ export class Orchestrator {
       // Build metadata
       const metadata: ProcessingMetadata = {
         processedAt: new Date().toISOString(),
-        sources: [],
+        sources: ['gov.uk-api', 'ons-institutional', 'ons-non-institutional', 'nhs-provider-directory', 'defra-uk-air'],
         statistics: {
           totalOrganisations: dedupResult.organisations.length,
           duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
