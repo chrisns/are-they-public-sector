@@ -248,6 +248,8 @@ export class WriterService {
       [OrganisationType.TRIBUNAL_NDPB]: 0,
       [OrganisationType.PUBLIC_CORPORATION]: 0,
       [OrganisationType.DEVOLVED_ADMINISTRATION]: 0,
+      [OrganisationType.EDUCATIONAL_INSTITUTION]: 0,
+      [OrganisationType.ACADEMY_TRUST]: 0,
       [OrganisationType.OTHER]: 0
     };
 

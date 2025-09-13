@@ -18,6 +18,8 @@ export enum OrganisationType {
   TRIBUNAL_NDPB = 'tribunal_ndpb',
   PUBLIC_CORPORATION = 'public_corporation',
   DEVOLVED_ADMINISTRATION = 'devolved_administration',
+  EDUCATIONAL_INSTITUTION = 'educational_institution',
+  ACADEMY_TRUST = 'academy_trust',
   OTHER = 'other'
 }
 
@@ -29,7 +31,8 @@ export enum DataSourceType {
   ONS_INSTITUTIONAL = 'ons_institutional_unit',
   ONS_NON_INSTITUTIONAL = 'ons_non_institutional_unit',
   NHS_PROVIDER_DIRECTORY = 'nhs_provider_directory',
-  DEFRA_UK_AIR = 'defra_uk_air'
+  DEFRA_UK_AIR = 'defra_uk_air',
+  GIAS = 'gias'
 }
 
 /**

@@ -20,8 +20,10 @@ import { createSimpleParser, SimpleParserService } from '../services/parser-simp
 import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simple.js';
 import { NHSParser } from '../services/nhs-parser.js';
 import { LocalAuthorityParser } from '../services/local-authority-parser.js';
+import { SchoolsParser } from '../services/schools-parser.js';
 import { NHSMapper } from '../services/mappers/nhs-mapper.js';
 import { LocalAuthorityMapper } from '../services/mappers/local-authority-mapper.js';
+import { SchoolsMapper } from '../services/mappers/schools-mapper.js';
 
 // Import models
 import type { Organisation } from '../models/organisation.js';
@@ -162,8 +164,10 @@ export class Orchestrator {
   private writer: WriterService;
   private nhsParser: NHSParser;
   private localAuthorityParser: LocalAuthorityParser;
+  private schoolsParser: SchoolsParser;
   private nhsMapper: NHSMapper;
   private localAuthorityMapper: LocalAuthorityMapper;
+  private schoolsMapper: SchoolsMapper;
   private startTime: number = 0;
   private peakMemory: number = 0;
 
@@ -204,11 +208,13 @@ export class Orchestrator {
       includeMetadata: true
     });
     
-    // Initialize NHS and Local Authority parsers
+    // Initialize NHS, Local Authority, and Schools parsers
     this.nhsParser = new NHSParser();
     this.localAuthorityParser = new LocalAuthorityParser();
+    this.schoolsParser = new SchoolsParser();
     this.nhsMapper = new NHSMapper();
     this.localAuthorityMapper = new LocalAuthorityMapper();
+    this.schoolsMapper = new SchoolsMapper();
   }
 
   /**
@@ -501,6 +507,54 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch Schools data
+   */
+  async fetchSchoolsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Schools data');
+    
+    try {
+      this.logger.startProgress('Fetching schools from GIAS...');
+      
+      // Aggregate schools with appropriate options for CLI
+      const result = await this.schoolsParser.aggregate({
+        searchTerm: 'e',  // Comprehensive search
+        delayMs: 500,     // Rate limiting delay
+        maxRetries: 5     // Retry on failures
+      });
+      
+      this.logger.stopProgress(`Fetched ${result.schools.length} schools`);
+      
+      // Map to Organisation model
+      this.logger.startProgress('Mapping schools to organisation model...');
+      const mapped = this.schoolsMapper.mapMultiple(result.schools);
+      this.logger.stopProgress(`Mapped ${mapped.length} school organisations`);
+      
+      return {
+        success: true,
+        data: { organisations: mapped },
+        organisations: mapped,
+        metadata: {
+          source: 'gias',
+          fetchedAt: result.metadata.fetchedAt,
+          count: mapped.length,
+          totalCount: result.metadata.totalCount,
+          openCount: result.metadata.openCount
+        }
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch Schools data', error);
+      return {
+        success: false,
+        metadata: {
+          source: 'gias',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error as Error
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -565,6 +619,18 @@ export class Orchestrator {
           this.logger.success(`Added ${laResult.organisations.length} Local Authorities`);
         } else {
           errors.push(laResult.error || new Error('Local Authority fetch failed'));
+        }
+      }
+      
+      // Fetch Schools data
+      if (!sourceFilter || sourceFilter === 'gias' || sourceFilter === 'schools') {
+        const schoolsResult = await this.fetchSchoolsData();
+        if (schoolsResult.success && schoolsResult.organisations) {
+          allOrganisations.push(...schoolsResult.organisations);
+          sources.push('gias');
+          this.logger.success(`Added ${schoolsResult.organisations.length} Schools`);
+        } else {
+          errors.push(schoolsResult.error || new Error('Schools fetch failed'));
         }
       }
 
@@ -786,7 +852,7 @@ export class Orchestrator {
       
       // Fetch NHS Trusts
       const nhsData = await this.fetchNHSData();
-      result.phases.dataFetching.nhsTrusts = {
+      (result.phases.dataFetching as any).nhsTrusts = {
         success: nhsData.success,
         ...(nhsData.error && { error: nhsData.error }),
         recordCount: nhsData.organisations?.length || 0
@@ -794,10 +860,18 @@ export class Orchestrator {
       
       // Fetch Local Authorities
       const laData = await this.fetchLocalAuthorityData();
-      result.phases.dataFetching.localAuthorities = {
+      (result.phases.dataFetching as any).localAuthorities = {
         success: laData.success,
         ...(laData.error && { error: laData.error }),
         recordCount: laData.organisations?.length || 0
+      };
+      
+      // Fetch Schools
+      const schoolsData = await this.fetchSchoolsData();
+      (result.phases.dataFetching as any).schools = {
+        success: schoolsData.success,
+        ...(schoolsData.error && { error: schoolsData.error }),
+        recordCount: schoolsData.organisations?.length || 0
       };
 
       // Combine all organisations
@@ -806,7 +880,8 @@ export class Orchestrator {
         ...onsData.institutionalUnits,
         ...onsData.nonInstitutionalUnits,
         ...(nhsData.organisations || []),
-        ...(laData.organisations || [])
+        ...(laData.organisations || []),
+        ...(schoolsData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)
@@ -832,7 +907,14 @@ export class Orchestrator {
       // Build metadata
       const metadata: ProcessingMetadata = {
         processedAt: new Date().toISOString(),
-        sources: ['gov.uk-api', 'ons-institutional', 'ons-non-institutional', 'nhs-provider-directory', 'defra-uk-air'],
+        sources: [
+          { source: DataSourceType.GOV_UK_API, recordCount: govUkData.organisations?.length || 0, retrievedAt: new Date().toISOString() },
+          { source: DataSourceType.ONS_INSTITUTIONAL, recordCount: onsData.institutionalUnits.length, retrievedAt: new Date().toISOString() },
+          { source: DataSourceType.ONS_NON_INSTITUTIONAL, recordCount: onsData.nonInstitutionalUnits.length, retrievedAt: new Date().toISOString() },
+          { source: DataSourceType.NHS_PROVIDER_DIRECTORY, recordCount: nhsData.organisations?.length || 0, retrievedAt: new Date().toISOString() },
+          { source: DataSourceType.DEFRA_UK_AIR, recordCount: laData.organisations?.length || 0, retrievedAt: new Date().toISOString() },
+          { source: DataSourceType.GIAS, recordCount: schoolsData.organisations?.length || 0, retrievedAt: new Date().toISOString() }
+        ],
         statistics: {
           totalOrganisations: dedupResult.organisations.length,
           duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
