@@ -15,7 +15,7 @@ export class SchoolsParser {
   private readonly defaultOptions: Required<SchoolsParserOptions> = {
     searchTerm: 'e',  // Not used with EstablishmentAll search
     delayMs: 100,  // Only used for explicit delays, not between normal requests
-    maxRetries: 5,
+    maxRetries: 15,  // Increased from 5 for better resilience
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   };
 
