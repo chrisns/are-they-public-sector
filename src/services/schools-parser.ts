@@ -25,9 +25,9 @@ export class SchoolsParser {
   async fetchPage(startIndex: number, options?: SchoolsParserOptions): Promise<FetchPageResult> {
     const opts = { ...this.defaultOptions, ...options };
     
+    // Use EstablishmentAll to get all schools without search term gaps
     const params = new URLSearchParams({
-      searchType: 'text',
-      'textSearchModel.Text': opts.searchTerm,
+      SearchType: 'EstablishmentAll',
       startIndex: startIndex.toString()
     });
 
@@ -79,7 +79,8 @@ export class SchoolsParser {
         }
 
         const schools = this.parseResponse(response.data);
-        const hasMore = schools.length === 100; // API returns 100 per page
+        // Continue fetching until we get 0 results (true end of data)
+        const hasMore = schools.length > 0;
         
         return {
           schools,
@@ -130,9 +131,11 @@ export class SchoolsParser {
     let startIndex = 0;
     let hasMore = true;
     let pageCount = 0;
+    let consecutiveEmptyPages = 0;
+    const MAX_CONSECUTIVE_EMPTY = 3; // Stop after 3 consecutive empty pages
 
     console.log('Starting schools aggregation...');
-    console.log(`Search term: "${opts.searchTerm}"`);
+    console.log('Fetching all UK schools from GIAS...');
 
     while (hasMore) {
       // Add delay between requests to avoid rate limiting
@@ -145,11 +148,28 @@ export class SchoolsParser {
       const result = await this.fetchPage(startIndex, opts);
       
       allSchools.push(...result.schools);
-      hasMore = result.hasMore;
+      
+      // Track consecutive empty pages to detect true end
+      if (result.schools.length === 0) {
+        consecutiveEmptyPages++;
+        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY) {
+          console.log(`Stopping after ${MAX_CONSECUTIVE_EMPTY} consecutive empty pages`);
+          hasMore = false;
+        }
+      } else {
+        consecutiveEmptyPages = 0;
+      }
+      
       startIndex = result.nextIndex;
       pageCount++;
 
       console.log(`  Retrieved ${result.schools.length} schools (total: ${allSchools.length})`);
+      
+      // Safety limit to prevent infinite loops
+      if (pageCount > 1200) { // 120,000 records max
+        console.log('Reached maximum page limit (1200 pages)');
+        hasMore = false;
+      }
     }
 
     console.log(`Aggregation complete. Total pages: ${pageCount}`);
