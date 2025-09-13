@@ -21,9 +21,11 @@ import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simp
 import { NHSParser } from '../services/nhs-parser.js';
 import { LocalAuthorityParser } from '../services/local-authority-parser.js';
 import { SchoolsParser } from '../services/schools-parser.js';
+import { DevolvedAdminParser } from '../services/devolved-admin-parser.js';
 import { NHSMapper } from '../services/mappers/nhs-mapper.js';
 import { LocalAuthorityMapper } from '../services/mappers/local-authority-mapper.js';
 import { SchoolsMapper } from '../services/mappers/schools-mapper.js';
+import { DevolvedAdminMapper } from '../services/mappers/devolved-admin-mapper.js';
 
 // Import models
 import type { Organisation } from '../models/organisation.js';
@@ -165,9 +167,11 @@ export class Orchestrator {
   private nhsParser: NHSParser;
   private localAuthorityParser: LocalAuthorityParser;
   private schoolsParser: SchoolsParser;
+  private devolvedAdminParser: DevolvedAdminParser;
   private nhsMapper: NHSMapper;
   private localAuthorityMapper: LocalAuthorityMapper;
   private schoolsMapper: SchoolsMapper;
+  private devolvedAdminMapper: DevolvedAdminMapper;
   private startTime: number = 0;
   private peakMemory: number = 0;
 
@@ -208,13 +212,15 @@ export class Orchestrator {
       includeMetadata: true
     });
     
-    // Initialize NHS, Local Authority, and Schools parsers
+    // Initialize NHS, Local Authority, Schools, and Devolved Admin parsers
     this.nhsParser = new NHSParser();
     this.localAuthorityParser = new LocalAuthorityParser();
     this.schoolsParser = new SchoolsParser();
+    this.devolvedAdminParser = new DevolvedAdminParser();
     this.nhsMapper = new NHSMapper();
     this.localAuthorityMapper = new LocalAuthorityMapper();
     this.schoolsMapper = new SchoolsMapper();
+    this.devolvedAdminMapper = new DevolvedAdminMapper();
   }
 
   /**
@@ -507,6 +513,45 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch Devolved Administrations data
+   */
+  async fetchDevolvedAdminData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Devolved Administrations data');
+    
+    try {
+      this.logger.startProgress('Loading devolved administrations...');
+      
+      // Aggregate devolved admin entities
+      const result = await this.devolvedAdminParser.aggregate({
+        includeAgencies: true,
+        includePublicBodies: true
+      });
+      
+      // Map to organisations
+      const organisations = this.devolvedAdminMapper.mapMultiple(result.entities);
+      
+      this.logger.stopProgress(`Fetched ${result.entities.length} devolved administration entities`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+      
+      // Log breakdown
+      this.logger.info(`By administration: Scotland=${result.metadata.byAdministration.scotland}, Wales=${result.metadata.byAdministration.wales}, NI=${result.metadata.byAdministration.northern_ireland}`);
+      
+      return {
+        success: true,
+        organisations,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch devolved admin data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        organisations: []
+      };
+    }
+  }
+
+  /**
    * Fetch Schools data
    */
   async fetchSchoolsData(): Promise<DataFetchResult> {
@@ -631,6 +676,18 @@ export class Orchestrator {
           this.logger.success(`Added ${schoolsResult.organisations.length} Schools`);
         } else {
           errors.push(schoolsResult.error || new Error('Schools fetch failed'));
+        }
+      }
+
+      // Fetch Devolved Administrations data
+      if (!sourceFilter || sourceFilter === 'devolved' || sourceFilter === 'manual') {
+        const devolvedResult = await this.fetchDevolvedAdminData();
+        if (devolvedResult.success && devolvedResult.organisations) {
+          allOrganisations.push(...devolvedResult.organisations);
+          sources.push('manual');
+          this.logger.success(`Added ${devolvedResult.organisations.length} Devolved Administration entities`);
+        } else {
+          errors.push(devolvedResult.error || new Error('Devolved admin fetch failed'));
         }
       }
 
@@ -874,6 +931,14 @@ export class Orchestrator {
         recordCount: schoolsData.organisations?.length || 0
       };
 
+      // Fetch Devolved Administrations
+      const devolvedData = await this.fetchDevolvedAdminData();
+      (result.phases.dataFetching as any).devolvedAdmin = {
+        success: devolvedData.success,
+        ...(devolvedData.error && { error: devolvedData.error }),
+        recordCount: devolvedData.organisations?.length || 0
+      };
+
       // Combine all organisations
       const allOrganisations = [
         ...(govUkData.organisations || []),
@@ -881,7 +946,8 @@ export class Orchestrator {
         ...onsData.nonInstitutionalUnits,
         ...(nhsData.organisations || []),
         ...(laData.organisations || []),
-        ...(schoolsData.organisations || [])
+        ...(schoolsData.organisations || []),
+        ...(devolvedData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)

@@ -1,0 +1,256 @@
+{
+  "lastUpdated": "2025-01-13",
+  "source": "Manual curation from official government websites",
+  "entities": [
+    {
+      "id": "scot-parliament",
+      "name": "Scottish Parliament",
+      "type": "parliament",
+      "administration": "scotland",
+      "website": "https://www.parliament.scot",
+      "established": "1999-05-12",
+      "responsibilities": ["Legislation", "Scrutiny", "Representation"]
+    },
+    {
+      "id": "scot-government",
+      "name": "Scottish Government",
+      "type": "government",
+      "administration": "scotland",
+      "website": "https://www.gov.scot",
+      "established": "1999-05-12",
+      "responsibilities": ["Executive functions", "Policy development", "Service delivery"]
+    },
+    {
+      "id": "scot-dg-economy",
+      "name": "Economy, Skills and Natural Resources",
+      "type": "directorate",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "responsibilities": ["Economic development", "Skills", "Natural resources", "Energy"]
+    },
+    {
+      "id": "scot-dg-education",
+      "name": "Education and Public Services",
+      "type": "directorate",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "responsibilities": ["Education", "Public services", "Local government"]
+    },
+    {
+      "id": "scot-dg-health",
+      "name": "Health and Social Services",
+      "type": "directorate",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "responsibilities": ["NHS Scotland", "Social care", "Public health"]
+    },
+    {
+      "id": "scot-marine",
+      "name": "Marine Directorate",
+      "type": "directorate",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "responsibilities": ["Marine policy", "Fisheries", "Aquaculture", "Marine planning"]
+    },
+    {
+      "id": "scot-legal",
+      "name": "Legal Services",
+      "type": "directorate",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "responsibilities": ["Legal advice", "Litigation", "Legislation drafting"]
+    },
+    {
+      "id": "wales-senedd",
+      "name": "Senedd Cymru / Welsh Parliament",
+      "type": "parliament",
+      "administration": "wales",
+      "website": "https://senedd.wales",
+      "established": "1999-05-12",
+      "alternativeNames": ["Senedd", "Welsh Parliament"],
+      "responsibilities": ["Legislation", "Scrutiny", "Representation"]
+    },
+    {
+      "id": "wales-government",
+      "name": "Welsh Government / Llywodraeth Cymru",
+      "type": "government",
+      "administration": "wales",
+      "website": "https://gov.wales",
+      "established": "1999-05-12",
+      "alternativeNames": ["Llywodraeth Cymru"],
+      "responsibilities": ["Executive functions", "Policy development", "Service delivery"]
+    },
+    {
+      "id": "wales-health-social",
+      "name": "Health and Social Services Group",
+      "type": "department",
+      "administration": "wales",
+      "parentId": "wales-government",
+      "responsibilities": ["NHS Wales", "Social services", "Public health", "Social care"]
+    },
+    {
+      "id": "wales-education-public",
+      "name": "Education and Public Services Group",
+      "type": "department",
+      "administration": "wales",
+      "parentId": "wales-government",
+      "responsibilities": ["Education", "Skills", "Welsh language", "Local government"]
+    },
+    {
+      "id": "wales-economy-skills",
+      "name": "Economy, Skills and Natural Resources Group",
+      "type": "department",
+      "administration": "wales",
+      "parentId": "wales-government",
+      "responsibilities": ["Economic development", "Business support", "Natural resources", "Agriculture"]
+    },
+    {
+      "id": "ni-assembly",
+      "name": "Northern Ireland Assembly",
+      "type": "parliament",
+      "administration": "northern_ireland",
+      "website": "https://www.niassembly.gov.uk",
+      "established": "1998-06-25",
+      "responsibilities": ["Legislation", "Scrutiny", "Representation"]
+    },
+    {
+      "id": "ni-executive",
+      "name": "Northern Ireland Executive",
+      "type": "government",
+      "administration": "northern_ireland",
+      "website": "https://www.northernireland.gov.uk",
+      "established": "1999-12-02",
+      "responsibilities": ["Executive functions", "Policy development", "Service delivery"]
+    },
+    {
+      "id": "ni-executive-office",
+      "name": "The Executive Office",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.executiveoffice-ni.gov.uk",
+      "minister": "First Minister and deputy First Minister",
+      "responsibilities": ["Executive coordination", "International relations", "Equality", "Good relations"]
+    },
+    {
+      "id": "ni-agriculture",
+      "name": "Department of Agriculture, Environment and Rural Affairs",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.daera-ni.gov.uk",
+      "alternativeNames": ["DAERA"],
+      "responsibilities": ["Agriculture", "Environment", "Rural development", "Fisheries"]
+    },
+    {
+      "id": "ni-communities",
+      "name": "Department for Communities",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.communities-ni.gov.uk",
+      "alternativeNames": ["DfC"],
+      "responsibilities": ["Social security", "Housing", "Sport", "Arts", "Culture"]
+    },
+    {
+      "id": "ni-economy",
+      "name": "Department for the Economy",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.economy-ni.gov.uk",
+      "alternativeNames": ["DfE"],
+      "responsibilities": ["Economic policy", "Energy", "Tourism", "Higher education", "Skills"]
+    },
+    {
+      "id": "ni-education",
+      "name": "Department of Education",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.education-ni.gov.uk",
+      "alternativeNames": ["DE"],
+      "responsibilities": ["Schools", "Youth services", "Early years", "Special education"]
+    },
+    {
+      "id": "ni-finance",
+      "name": "Department of Finance",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.finance-ni.gov.uk",
+      "alternativeNames": ["DoF"],
+      "responsibilities": ["Public spending", "Civil Service", "Procurement", "Statistics"]
+    },
+    {
+      "id": "ni-health",
+      "name": "Department of Health",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.health-ni.gov.uk",
+      "alternativeNames": ["DoH"],
+      "responsibilities": ["Health services", "Social care", "Public health", "Patient safety"]
+    },
+    {
+      "id": "ni-infrastructure",
+      "name": "Department for Infrastructure",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.infrastructure-ni.gov.uk",
+      "alternativeNames": ["DfI"],
+      "responsibilities": ["Transport", "Water", "Planning", "Public transport"]
+    },
+    {
+      "id": "ni-justice",
+      "name": "Department of Justice",
+      "type": "department",
+      "administration": "northern_ireland",
+      "parentId": "ni-executive",
+      "website": "https://www.justice-ni.gov.uk",
+      "alternativeNames": ["DoJ"],
+      "responsibilities": ["Justice system", "Policing", "Prisons", "Youth justice"]
+    },
+    {
+      "id": "scot-revenue",
+      "name": "Revenue Scotland",
+      "type": "agency",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "website": "https://www.revenue.scot",
+      "established": "2015-01-01",
+      "responsibilities": ["Tax collection", "Land and Buildings Transaction Tax", "Scottish Landfill Tax"]
+    },
+    {
+      "id": "scot-enterprise",
+      "name": "Scottish Enterprise",
+      "type": "agency",
+      "administration": "scotland",
+      "parentId": "scot-government",
+      "website": "https://www.scottish-enterprise.com",
+      "responsibilities": ["Economic development", "Business support", "Innovation", "Investment"]
+    },
+    {
+      "id": "wales-nrw",
+      "name": "Natural Resources Wales",
+      "type": "agency",
+      "administration": "wales",
+      "parentId": "wales-government",
+      "website": "https://naturalresources.wales",
+      "alternativeNames": ["NRW", "Cyfoeth Naturiol Cymru"],
+      "established": "2013-04-01",
+      "responsibilities": ["Environmental protection", "Natural resource management", "Forestry", "Flood defence"]
+    },
+    {
+      "id": "ni-nisra",
+      "name": "Northern Ireland Statistics and Research Agency",
+      "type": "agency",
+      "administration": "northern_ireland",
+      "parentId": "ni-finance",
+      "website": "https://www.nisra.gov.uk",
+      "alternativeNames": ["NISRA"],
+      "responsibilities": ["Official statistics", "Census", "Research", "Data services"]
+    }
+  ]
+}
