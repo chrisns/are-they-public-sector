@@ -13,8 +13,8 @@ import { SchoolsParserError, SchoolsErrorCode } from '../models/school.js';
 export class SchoolsParser {
   private readonly baseUrl = 'https://get-information-schools.service.gov.uk/Establishments/Search/results-json';
   private readonly defaultOptions: Required<SchoolsParserOptions> = {
-    searchTerm: 'e',  // 'e' returns most comprehensive results
-    delayMs: 100,  // Reduced from 500ms for 5x faster fetching
+    searchTerm: 'e',  // Not used with EstablishmentAll search
+    delayMs: 100,  // Only used for explicit delays, not between normal requests
     maxRetries: 5,
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
   };
@@ -132,38 +132,54 @@ export class SchoolsParser {
     let hasMore = true;
     let pageCount = 0;
     let consecutiveEmptyPages = 0;
+    let backoffMs = 0; // Start with no delay
     const MAX_CONSECUTIVE_EMPTY = 3; // Stop after 3 consecutive empty pages
 
     console.log('Starting schools aggregation...');
-    console.log('Fetching all UK schools from GIAS...');
+    console.log('Fetching all UK schools from GIAS (no delay for successful requests)...');
 
     while (hasMore) {
-      // Add delay between requests to avoid rate limiting
-      if (pageCount > 0) {
-        await this.delay(opts.delayMs);
+      // Only delay if we have a backoff from previous error/empty result
+      if (backoffMs > 0) {
+        console.log(`  Backing off for ${backoffMs}ms...`);
+        await this.delay(backoffMs);
       }
 
       console.log(`Fetching page ${pageCount + 1} (index ${startIndex})...`);
       
-      const result = await this.fetchPage(startIndex, opts);
-      
-      allSchools.push(...result.schools);
-      
-      // Track consecutive empty pages to detect true end
-      if (result.schools.length === 0) {
-        consecutiveEmptyPages++;
-        if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY) {
-          console.log(`Stopping after ${MAX_CONSECUTIVE_EMPTY} consecutive empty pages`);
-          hasMore = false;
+      try {
+        const result = await this.fetchPage(startIndex, opts);
+        
+        allSchools.push(...result.schools);
+        
+        // Track consecutive empty pages to detect true end
+        if (result.schools.length === 0) {
+          consecutiveEmptyPages++;
+          // Exponential backoff on empty results
+          backoffMs = Math.min(1000 * Math.pow(2, consecutiveEmptyPages - 1), 8000);
+          
+          if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY) {
+            console.log(`Stopping after ${MAX_CONSECUTIVE_EMPTY} consecutive empty pages`);
+            hasMore = false;
+          }
+        } else {
+          // Reset backoff on successful fetch with data
+          consecutiveEmptyPages = 0;
+          backoffMs = 0;
         }
-      } else {
-        consecutiveEmptyPages = 0;
-      }
-      
-      startIndex = result.nextIndex;
-      pageCount++;
+        
+        startIndex = result.nextIndex;
+        pageCount++;
 
-      console.log(`  Retrieved ${result.schools.length} schools (total: ${allSchools.length})`);
+        console.log(`  Retrieved ${result.schools.length} schools (total: ${allSchools.length})`);
+        
+      } catch (error) {
+        console.log(`  Error fetching page: ${error}. Applying exponential backoff...`);
+        // Exponential backoff on errors
+        backoffMs = Math.min(backoffMs === 0 ? 1000 : backoffMs * 2, 16000);
+        // Don't increment page count or index on error, retry same page
+        continue;
+      }
       
       // Safety limit to prevent infinite loops
       if (pageCount > 1200) { // 120,000 records max
