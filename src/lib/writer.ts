@@ -250,6 +250,9 @@ export class WriterService {
       [OrganisationType.DEVOLVED_ADMINISTRATION]: 0,
       [OrganisationType.EDUCATIONAL_INSTITUTION]: 0,
       [OrganisationType.ACADEMY_TRUST]: 0,
+      [OrganisationType.LEGISLATIVE_BODY]: 0,
+      [OrganisationType.PUBLIC_BODY]: 0,
+      [OrganisationType.EMERGENCY_SERVICE]: 0,
       [OrganisationType.OTHER]: 0
     };
 

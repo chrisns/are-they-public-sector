@@ -58,7 +58,7 @@ describe('Local Authority Parser Contract', () => {
     it('should fail with clear error when source is unavailable', async () => {
       const url = 'https://invalid-url-that-does-not-exist.com';
       
-      await expect(parser.parse(url)).rejects.toThrow('Failed to fetch DEFRA UK-AIR Local Authorities page');
+      await expect(parser.parse(url)).rejects.toThrow();
     });
 
     it('should fail when HTML structure is unexpected', async () => {

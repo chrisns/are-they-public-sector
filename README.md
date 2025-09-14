@@ -7,7 +7,7 @@
 [![Coverage](https://img.shields.io/badge/Coverage-80%25%2B-brightgreen)](https://jestjs.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-A powerful TypeScript CLI tool that aggregates UK public sector organisation data from multiple government sources into a unified, deduplicated JSON format. This tool brings together data from **7 different sources**, including over **30,000 schools**, **400+ local authorities**, **200+ NHS trusts**, and all UK government departments and devolved administrations.
+A powerful TypeScript CLI tool that aggregates UK public sector organisation data from multiple government sources into a unified, deduplicated JSON format. This tool brings together data from **10 different sources**, including over **30,000 schools**, **400+ local authorities**, **200+ NHS trusts**, **45+ police forces**, **50+ fire services**, and all UK government departments and devolved administrations.
 
 ## 🚀 Why This Matters
 
@@ -26,9 +26,12 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 - **30,000+ Schools** - Every UK school from GIAS (Get Information About Schools)
 - **400+ Local Authorities** - All councils including County, District, Borough, City, and Unitary
 - **215+ NHS Organisations** - All NHS Trusts and Foundation Trusts
+- **45+ Police Forces** - All UK territorial, special, and crown dependency police forces
+- **50+ Fire Services** - All UK fire and rescue services
 - **300+ Government Bodies** - Departments, agencies, NDPBs from GOV.UK API
 - **10,000+ Public Sector Units** - From ONS Public Sector Classification Guide
 - **27 Devolved Entities** - Scottish Parliament, Welsh Senedd, NI Assembly and departments
+- **Additional Devolved Bodies** - Scottish, Welsh, and NI agencies not in core data
 
 ### 🛠 Technical Excellence
 - **Multi-Source Aggregation**: Seamlessly combines JSON APIs, Excel files, HTML scraping, and static data
@@ -46,9 +49,12 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 | **GIAS Schools** | ~30,000 | API/JSON | All UK schools with full details including location, type, status |
 | **DEFRA Local Authorities** | ~408 | HTML | All UK local government bodies scraped from UK-AIR |
 | **NHS Provider Directory** | ~215 | HTML | NHS Trusts and Foundation Trusts from england.nhs.uk |
+| **Police Forces** | ~45 | HTML | All UK police forces from police.uk |
+| **Fire Services** | ~50 | HTML | All UK fire and rescue services from NFCC |
 | **GOV.UK API** | ~300 | JSON | Central government departments, agencies, NDPBs |
 | **ONS Classification** | ~10,000 | Excel | Comprehensive public sector classification guide |
 | **Devolved Administrations** | 27 | Static | Scottish, Welsh, NI parliaments and departments |
+| **Additional Devolved Bodies** | ~15 | HTML | Scottish, Welsh, NI agencies from gov.uk guidance |
 
 ## 🚦 Quick Start
 
@@ -81,6 +87,15 @@ pnpm run compile -- --source nhs-provider-directory
 
 # Aggregate only devolved administrations
 pnpm run compile -- --source devolved
+
+# Aggregate only police forces
+pnpm run compile -- --source police
+
+# Aggregate only fire services
+pnpm run compile -- --source fire
+
+# Aggregate additional devolved bodies
+pnpm run compile -- --source devolved-extra
 ```
 
 ## 📁 Output Format
@@ -152,12 +167,16 @@ src/
 │   ├── schools-parser.ts  # GIAS schools aggregation
 │   ├── nhs-parser.ts      # NHS HTML scraping
 │   ├── local-authority-parser.ts  # LA HTML scraping
+│   ├── police-parser.ts   # Police forces HTML scraping
+│   ├── fire-parser.ts     # Fire services HTML scraping
 │   ├── devolved-admin-parser.ts   # Devolved administrations
+│   ├── devolved-extra-parser.ts   # Additional devolved bodies
 │   └── mappers/           # Data transformation
 ├── models/                # TypeScript interfaces
 │   ├── organisation.ts    # Core data model
 │   ├── school.ts         # Schools model
 │   ├── nhs.ts            # NHS model
+│   ├── emergency-services.ts # Police, Fire, Devolved models
 │   └── devolved-admin.ts # Devolved model
 └── data/                  # Static data files
     └── devolved-administrations.json
@@ -214,14 +233,13 @@ We welcome contributions! This is an open-source project that benefits everyone 
 - 🇮🇪 **Northern Ireland Councils**: Add NI's 11 councils
 - 🏛 **Quangos & Arms-Length Bodies**: Expand coverage of public bodies
 - 🎓 **Universities**: Add UK higher education institutions
-- 🚓 **Police & Fire Services**: Add emergency services organisations
 - 📊 **Data Enrichment**: Add websites, social media, contact details
 
 ## 🚀 Roadmap
 
 - [ ] Add remaining UK local authorities (Scotland, Wales, NI)
 - [ ] Include universities and higher education institutions
-- [ ] Add police forces and fire services
+- [x] Add police forces and fire services (✅ Complete)
 - [ ] Implement real-time update mechanism
 - [ ] Create web API for querying the dataset
 - [ ] Build visualisation dashboard
@@ -256,12 +274,14 @@ This project wouldn't be possible without the open data published by:
 - [NHS England](https://www.england.nhs.uk/) - NHS provider data
 - [DEFRA](https://uk-air.defra.gov.uk/) - Local authority listings
 - [Get Information About Schools](https://get-information-schools.service.gov.uk/) - Schools data
+- [Police.uk](https://www.police.uk/) - UK police forces directory
+- [NFCC](https://www.nationalfirechiefs.org.uk/) - National Fire Chiefs Council
+- [GOV.UK Guidance](https://www.gov.uk/guidance/) - Devolved administration bodies
 
 ## 💬 Support & Contact
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/are-they-public-sector2/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/are-they-public-sector2/discussions)
-- **Twitter**: [@yourusername](https://twitter.com/yourusername)
 
 ---
 

@@ -58,6 +58,7 @@ export class DevolvedAdminMapper {
       type: orgType,
       classification: this.determineClassification(entity),
       status: 'active', // All devolved entities are assumed active
+      ...(entity.website && { website: entity.website }),
       location: {
         country
       },
@@ -68,7 +69,6 @@ export class DevolvedAdminMapper {
         hasConflicts: false,
         requiresReview: false
       },
-      website: entity.website,
       additionalProperties
     };
   }

@@ -47,7 +47,7 @@ function createCli(): Command {
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
     .option('-l, --log-file <path>', 'Log to file in addition to console')
     .option('-q, --quiet', 'Suppress all output except errors', false)
-    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air)')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -60,7 +60,7 @@ function createCli(): Command {
     .option('-d, --debug', 'Enable debug mode', false)
     .option('-t, --timeout <ms>', 'Request timeout in milliseconds', '30000')
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
-    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air)')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });

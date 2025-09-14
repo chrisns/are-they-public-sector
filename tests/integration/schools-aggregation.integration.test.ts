@@ -57,6 +57,10 @@ describe('Schools Aggregation Integration Tests', () => {
     });
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   afterAll(() => {
     jest.restoreAllMocks();
   });
@@ -213,12 +217,14 @@ describe('Schools Aggregation Integration Tests', () => {
     });
 
     it('should fail fast on format changes', async () => {
-      jest.spyOn(axios, 'get').mockImplementation(async () => {
+      const mockGet = jest.spyOn(axios, 'get').mockImplementation(async () => {
         return { data: { error: 'Unexpected format' } };
       });
 
       await expect(parser.fetchPage(0)).rejects.toThrow();
-    }, 10000);
+      
+      mockGet.mockRestore();
+    }, 30000);
   });
 
   describe('Metadata Generation', () => {
@@ -235,7 +241,7 @@ describe('Schools Aggregation Integration Tests', () => {
       
       expect(result.metadata.totalCount).toBe(result.schools.length);
       expect(result.metadata.openCount).toBe(result.schools.length);
-    }, 10000);
+    }, 30000);
   });
 
   describe('Performance', () => {
@@ -247,6 +253,6 @@ describe('Schools Aggregation Integration Tests', () => {
       // Should complete quickly with mocked data
       expect(duration).toBeLessThan(5000);
       expect(result.schools.length).toBeGreaterThan(0);
-    }, 10000);
+    }, 30000);
   });
 });

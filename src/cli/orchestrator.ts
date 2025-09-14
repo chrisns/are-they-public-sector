@@ -26,6 +26,12 @@ import { NHSMapper } from '../services/mappers/nhs-mapper.js';
 import { LocalAuthorityMapper } from '../services/mappers/local-authority-mapper.js';
 import { SchoolsMapper } from '../services/mappers/schools-mapper.js';
 import { DevolvedAdminMapper } from '../services/mappers/devolved-admin-mapper.js';
+import { PoliceParser } from '../services/police-parser.js';
+import { FireParser } from '../services/fire-parser.js';
+import { DevolvedExtraParser } from '../services/devolved-extra-parser.js';
+import { PoliceMapper } from '../services/mappers/police-mapper.js';
+import { FireMapper } from '../services/mappers/fire-mapper.js';
+import { DevolvedExtraMapper } from '../services/mappers/devolved-extra-mapper.js';
 
 // Import models
 import type { Organisation } from '../models/organisation.js';
@@ -546,7 +552,11 @@ export class Orchestrator {
       return {
         success: false,
         error: error as Error,
-        organisations: []
+        organisations: [],
+        metadata: {
+          source: 'devolved-admin',
+          fetchedAt: new Date().toISOString()
+        }
       };
     }
   }
@@ -595,6 +605,105 @@ export class Orchestrator {
           fetchedAt: new Date().toISOString()
         },
         error: error as Error
+      };
+    }
+  }
+
+  /**
+   * Fetch Police Forces data
+   */
+  async fetchPoliceData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Police Forces');
+    
+    try {
+      this.logger.startProgress('Fetching police forces...');
+      
+      const parser = new PoliceParser();
+      const mapper = new PoliceMapper();
+      const result = await parser.aggregate();
+      
+      const organisations = result.forces.map(force => mapper.mapToOrganisation(force));
+      
+      this.logger.stopProgress(`Fetched ${result.forces.length} police forces`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+      
+      return {
+        success: true,
+        organisations,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch police data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'police.uk', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
+   * Fetch Fire Services data
+   */
+  async fetchFireData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Fire Services');
+    
+    try {
+      this.logger.startProgress('Fetching fire services...');
+      
+      const parser = new FireParser();
+      const mapper = new FireMapper();
+      const result = await parser.aggregate();
+      
+      const organisations = result.services.map(service => mapper.mapToOrganisation(service));
+      
+      this.logger.stopProgress(`Fetched ${result.services.length} fire services`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+      
+      return {
+        success: true,
+        organisations,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch fire data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'NFCC', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
+   * Fetch Additional Devolved Bodies data
+   */
+  async fetchDevolvedExtraData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Additional Devolved Bodies');
+    
+    try {
+      this.logger.startProgress('Fetching additional devolved bodies...');
+      
+      const parser = new DevolvedExtraParser();
+      const mapper = new DevolvedExtraMapper();
+      const result = await parser.aggregate();
+      
+      const organisations = result.bodies.map(body => mapper.mapToOrganisation(body));
+      
+      this.logger.stopProgress(`Fetched ${result.bodies.length} new devolved bodies`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+      
+      return {
+        success: true,
+        organisations,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch additional devolved data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'gov.uk/guidance', fetchedAt: new Date().toISOString() }
       };
     }
   }
@@ -688,6 +797,42 @@ export class Orchestrator {
           this.logger.success(`Added ${devolvedResult.organisations.length} Devolved Administration entities`);
         } else {
           errors.push(devolvedResult.error || new Error('Devolved admin fetch failed'));
+        }
+      }
+
+      // Fetch Police Forces data
+      if (!sourceFilter || sourceFilter === 'police' || sourceFilter === 'police-uk') {
+        const policeResult = await this.fetchPoliceData();
+        if (policeResult.success && policeResult.organisations) {
+          allOrganisations.push(...policeResult.organisations);
+          sources.push('police.uk');
+          this.logger.success(`Added ${policeResult.organisations.length} Police Forces`);
+        } else {
+          errors.push(policeResult.error || new Error('Police fetch failed'));
+        }
+      }
+
+      // Fetch Fire Services data
+      if (!sourceFilter || sourceFilter === 'fire' || sourceFilter === 'nfcc') {
+        const fireResult = await this.fetchFireData();
+        if (fireResult.success && fireResult.organisations) {
+          allOrganisations.push(...fireResult.organisations);
+          sources.push('nfcc');
+          this.logger.success(`Added ${fireResult.organisations.length} Fire Services`);
+        } else {
+          errors.push(fireResult.error || new Error('Fire services fetch failed'));
+        }
+      }
+
+      // Fetch Additional Devolved Bodies data
+      if (!sourceFilter || sourceFilter === 'devolved-extra' || sourceFilter === 'devolved-additional') {
+        const devolvedExtraResult = await this.fetchDevolvedExtraData();
+        if (devolvedExtraResult.success && devolvedExtraResult.organisations) {
+          allOrganisations.push(...devolvedExtraResult.organisations);
+          sources.push('gov.uk-guidance');
+          this.logger.success(`Added ${devolvedExtraResult.organisations.length} Additional Devolved Bodies`);
+        } else {
+          errors.push(devolvedExtraResult.error || new Error('Additional devolved fetch failed'));
         }
       }
 

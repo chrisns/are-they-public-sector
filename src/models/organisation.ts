@@ -22,6 +22,7 @@ export enum OrganisationType {
   ACADEMY_TRUST = 'academy_trust',
   LEGISLATIVE_BODY = 'legislative_body',
   PUBLIC_BODY = 'public_body',
+  EMERGENCY_SERVICE = 'emergency_service',
   OTHER = 'other'
 }
 
@@ -35,7 +36,10 @@ export enum DataSourceType {
   NHS_PROVIDER_DIRECTORY = 'nhs_provider_directory',
   DEFRA_UK_AIR = 'defra_uk_air',
   GIAS = 'gias',
-  MANUAL = 'manual'
+  MANUAL = 'manual',
+  POLICE_UK = 'police_uk',
+  NFCC = 'nfcc',
+  GOV_UK_GUIDANCE = 'gov_uk_guidance'
 }
 
 /**
