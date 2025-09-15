@@ -41,19 +41,19 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding UK Colleges (Scotland, Wales, Northern Ireland):
-- AoC webpage: Dynamic PDF links (must fetch first)
-- PDF parsing: Extract college names from tables
-- Validation: Count must match webpage display
-- New parser: colleges-parser.ts with pdf-parse
-- Fail-fast on webpage/PDF format changes
+Adding Northern Ireland Schools:
+- NI Education Department: Two-phase HTTP request (ViewState + Export)
+- Excel parsing: Extract ~1122 open schools with full metadata
+- Validation: Count must be ~1122 (±10% tolerance)
+- New parser: ni-schools-parser.ts with cheerio and xlsx
+- Fail-fast on service unavailability or format changes
 
 ## Key Files
-- `specs/007-we-re-already/spec.md` - UK Colleges feature specification
-- `specs/007-we-re-already/plan.md` - Implementation plan
-- `specs/007-we-re-already/contracts/` - Parser contracts
-- `src/services/colleges-parser.ts` - Colleges PDF parser (NEW)
-- `src/services/mappers/colleges-mapper.ts` - Maps to Organisation (NEW)
+- `specs/008-ni-schools-you/spec.md` - NI Schools feature specification
+- `specs/008-ni-schools-you/plan.md` - Implementation plan
+- `specs/008-ni-schools-you/contracts/` - Parser contracts
+- `src/services/ni-schools-parser.ts` - NI Schools parser (NEW)
+- `src/services/mappers/ni-schools-mapper.ts` - Maps to Organisation (NEW)
 
 ## Development Notes
 - HTML scraping using cheerio for webpage parsing
@@ -63,11 +63,11 @@ Adding UK Colleges (Scotland, Wales, Northern Ireland):
 - Fail-fast approach for nightly runs
 
 ## Recent Changes
-- Branch 007-we-re-already: Adding UK Colleges (Scotland, Wales, NI)
-- Integrated pdf-parse for PDF table extraction
-- Added count validation between webpage and PDFs
+- Branch 008-ni-schools-you: Adding Northern Ireland Schools data
+- Two-phase HTTP with ViewState/EventValidation for ASP.NET forms
+- Excel parsing for ~1122 schools with metadata extraction
+- Branch 007-we-re-already: Added UK Colleges (Scotland, Wales, NI)
 - Branch 006-you-can-find: Added emergency services (Police, Fire)
-- Branch 004-you-can-pull: Added NHS Trusts and Local Authorities
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

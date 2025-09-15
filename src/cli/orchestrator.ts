@@ -31,10 +31,12 @@ import { PoliceParser } from '../services/police-parser.js';
 import { FireParser } from '../services/fire-parser.js';
 import { DevolvedExtraParser } from '../services/devolved-extra-parser.js';
 import { CollegesParser } from '../services/colleges-parser.js';
+import { NISchoolsParser } from '../services/ni-schools-parser.js';
 import { PoliceMapper } from '../services/mappers/police-mapper.js';
 import { FireMapper } from '../services/mappers/fire-mapper.js';
 import { DevolvedExtraMapper } from '../services/mappers/devolved-extra-mapper.js';
 import { CollegesMapper } from '../services/mappers/colleges-mapper.js';
+import { NISchoolsMapper } from '../services/mappers/ni-schools-mapper.js';
 
 // Import models
 import type { Organisation, DataSourceReference } from '../models/organisation.js';
@@ -762,6 +764,42 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch Northern Ireland Schools data
+   */
+  async fetchNISchoolsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Northern Ireland Schools');
+
+    try {
+      this.logger.startProgress('Fetching schools from NI Education Department...');
+
+      const parser = new NISchoolsParser();
+      const mapper = new NISchoolsMapper();
+      const rawSchools = await parser.parse();
+      const organisations = mapper.mapMany(rawSchools);
+
+      this.logger.stopProgress(`Fetched ${rawSchools.length} NI schools`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'NI Education Department',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch NI schools data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'NI Education Department', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -901,6 +939,18 @@ export class Orchestrator {
           this.logger.success(`Added ${collegesResult.organisations.length} UK Colleges`);
         } else {
           errors.push(collegesResult.error || new Error('Colleges fetch failed'));
+        }
+      }
+
+      // Fetch Northern Ireland Schools data
+      if (!sourceFilter || sourceFilter === 'ni-schools' || sourceFilter === 'northern-ireland-schools') {
+        const niSchoolsResult = await this.fetchNISchoolsData();
+        if (niSchoolsResult.success && niSchoolsResult.organisations) {
+          allOrganisations.push(...niSchoolsResult.organisations);
+          sources.push('ni-education');
+          this.logger.success(`Added ${niSchoolsResult.organisations.length} Northern Ireland Schools`);
+        } else {
+          errors.push(niSchoolsResult.error || new Error('NI Schools fetch failed'));
         }
       }
 
@@ -1184,6 +1234,14 @@ export class Orchestrator {
         recordCount: collegesData.organisations?.length || 0
       };
 
+      // Fetch Northern Ireland Schools
+      const niSchoolsData = await this.fetchNISchoolsData();
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).niSchools = {
+        success: niSchoolsData.success,
+        ...(niSchoolsData.error && { error: niSchoolsData.error }),
+        recordCount: niSchoolsData.organisations?.length || 0
+      };
+
       // Combine all organisations
       const allOrganisations = [
         ...(govUkData.organisations || []),
@@ -1196,7 +1254,8 @@ export class Orchestrator {
         ...(policeData.organisations || []),
         ...(fireData.organisations || []),
         ...(devolvedExtraData.organisations || []),
-        ...(collegesData.organisations || [])
+        ...(collegesData.organisations || []),
+        ...(niSchoolsData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)
