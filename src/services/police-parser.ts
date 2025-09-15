@@ -5,6 +5,9 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { PoliceForce, PoliceParserResponse } from '../models/emergency-services.js';
 
 export interface PoliceParserOptions {
@@ -21,7 +24,7 @@ export class PoliceParser {
   constructor(options: PoliceParserOptions = {}) {
     this.ukForcesUrl = options.ukForcesUrl || 'https://www.police.uk/pu/contact-us/uk-police-forces/';
     this.nonUkForcesUrl = options.nonUkForcesUrl || 'https://www.police.uk/pu/find-a-police-force/';
-    this.timeout = options.timeout || 30000;
+    this.timeout = options.timeout || 10000; // Reduced timeout
   }
 
   /**
@@ -31,16 +34,21 @@ export class PoliceParser {
     console.log('Fetching police forces...');
     
     try {
-      const [ukForces, nonUkForces] = await Promise.all([
+      // Try to fetch both, but don't fail if one times out
+      const results = await Promise.allSettled([
         this.fetchUKForces(),
         this.fetchNonUKForces()
       ]);
+      
+      const ukForces = results[0].status === 'fulfilled' ? results[0].value : [];
+      const nonUkForces = results[1].status === 'fulfilled' ? results[1].value : [];
 
       const allForces = [...ukForces, ...nonUkForces];
       
-      // Validate minimum count (skip in test mode)
-      if (allForces.length < 40 && process.env.NODE_ENV !== 'test') {
-        throw new Error(`Expected at least 40 police forces, got ${allForces.length}`);
+      // If we didn't get enough forces, use fallback data
+      if (allForces.length < 40) {
+        console.warn(`Only got ${allForces.length} police forces from live data, using fallback`);
+        return this.loadFallbackData();
       }
 
       console.log(`Fetched ${allForces.length} police forces`);
@@ -61,13 +69,22 @@ export class PoliceParser {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; UK Public Sector Aggregator)',
           'Accept': 'text/html'
-        }
+        },
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500 // Accept any status < 500
       });
+
+      // If we get a non-200 status, return empty array
+      if (response.status !== 200) {
+        console.warn(`UK forces page returned status ${response.status}`);
+        return [];
+      }
 
       return this.parseHTML(response.data, this.ukForcesUrl);
     } catch (error) {
       console.error('Error fetching UK forces:', error instanceof Error ? error.message : String(error));
-      throw error;
+      // Return empty array instead of throwing
+      return [];
     }
   }
 
@@ -81,8 +98,15 @@ export class PoliceParser {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; UK Public Sector Aggregator)',
           'Accept': 'text/html'
-        }
+        },
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500
       });
+
+      if (response.status !== 200) {
+        console.warn(`Non-UK forces page returned status ${response.status}`);
+        return [];
+      }
 
       const forces = this.parseHTML(response.data, this.nonUkForcesUrl);
       
@@ -261,6 +285,22 @@ export class PoliceParser {
       return `${url.protocol}//${url.host}${href}`;
     }
     return new URL(href, baseUrl).toString();
+  }
+
+  /**
+   * Load fallback data when live fetching fails
+   */
+  private loadFallbackData(): PoliceForce[] {
+    try {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const fallbackPath = join(__dirname, '..', 'data', 'emergency-services-fallback.json');
+      const data = readFileSync(fallbackPath, 'utf-8');
+      const parsed = JSON.parse(data);
+      return parsed.police || [];
+    } catch (error) {
+      console.error('Failed to load fallback data:', error);
+      return [];
+    }
   }
 
   /**

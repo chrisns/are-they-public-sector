@@ -723,6 +723,8 @@ export class Orchestrator {
 
     try {
       const sourceFilter = this.config.source?.toLowerCase();
+      console.log(`[ORCHESTRATOR] Source filter: "${sourceFilter}" (config.source: "${this.config.source}")`);
+      this.logger.info(`Source filter: ${sourceFilter || 'none (fetching all sources)'}`);
       
       // Fetch GOV.UK data
       if (!sourceFilter || sourceFilter === 'govuk' || sourceFilter === 'gov-uk') {
@@ -801,7 +803,9 @@ export class Orchestrator {
       }
 
       // Fetch Police Forces data
+      this.logger.debug(`Checking police fetch: sourceFilter=${sourceFilter}, will fetch=${!sourceFilter || sourceFilter === 'police' || sourceFilter === 'police-uk'}`);
       if (!sourceFilter || sourceFilter === 'police' || sourceFilter === 'police-uk') {
+        this.logger.info('Fetching police forces...');
         const policeResult = await this.fetchPoliceData();
         if (policeResult.success && policeResult.organisations) {
           allOrganisations.push(...policeResult.organisations);
@@ -1084,6 +1088,30 @@ export class Orchestrator {
         recordCount: devolvedData.organisations?.length || 0
       };
 
+      // Fetch Police Forces
+      const policeData = await this.fetchPoliceData();
+      (result.phases.dataFetching as any).police = {
+        success: policeData.success,
+        ...(policeData.error && { error: policeData.error }),
+        recordCount: policeData.organisations?.length || 0
+      };
+
+      // Fetch Fire Services
+      const fireData = await this.fetchFireData();
+      (result.phases.dataFetching as any).fire = {
+        success: fireData.success,
+        ...(fireData.error && { error: fireData.error }),
+        recordCount: fireData.organisations?.length || 0
+      };
+
+      // Fetch Additional Devolved Bodies
+      const devolvedExtraData = await this.fetchDevolvedExtraData();
+      (result.phases.dataFetching as any).devolvedExtra = {
+        success: devolvedExtraData.success,
+        ...(devolvedExtraData.error && { error: devolvedExtraData.error }),
+        recordCount: devolvedExtraData.organisations?.length || 0
+      };
+
       // Combine all organisations
       const allOrganisations = [
         ...(govUkData.organisations || []),
@@ -1092,7 +1120,10 @@ export class Orchestrator {
         ...(nhsData.organisations || []),
         ...(laData.organisations || []),
         ...(schoolsData.organisations || []),
-        ...(devolvedData.organisations || [])
+        ...(devolvedData.organisations || []),
+        ...(policeData.organisations || []),
+        ...(fireData.organisations || []),
+        ...(devolvedExtraData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)

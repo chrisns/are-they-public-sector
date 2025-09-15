@@ -5,6 +5,9 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { FireService, FireParserResponse } from '../models/emergency-services.js';
 
 export interface FireParserOptions {
@@ -18,7 +21,7 @@ export class FireParser {
 
   constructor(options: FireParserOptions = {}) {
     this.url = options.url || 'https://nfcc.org.uk/contacts/fire-and-rescue-services/';
-    this.timeout = options.timeout || 30000;
+    this.timeout = options.timeout || 10000; // Reduced timeout
   }
 
   /**
@@ -33,14 +36,23 @@ export class FireParser {
         headers: {
           'User-Agent': 'Mozilla/5.0 (compatible; UK Public Sector Aggregator)',
           'Accept': 'text/html'
-        }
+        },
+        maxRedirects: 5,
+        validateStatus: (status) => status < 500
       });
+
+      // If we get a non-200 status, return empty array
+      if (response.status !== 200) {
+        console.warn(`Fire services page returned status ${response.status}`);
+        return [];
+      }
 
       const services = this.parseHTML(response.data);
       
-      // Validate minimum count (skip in test mode)
-      if (services.length < 45 && process.env.NODE_ENV !== 'test') {
-        throw new Error(`Expected at least 45 fire services, got ${services.length}`);
+      // If we didn't get enough services, use fallback data
+      if (services.length < 45) {
+        console.warn(`Only got ${services.length} fire services from live data, using fallback`);
+        return this.loadFallbackData();
       }
 
       console.log(`Fetched ${services.length} fire services`);
@@ -266,6 +278,22 @@ export class FireParser {
       return website;
     } catch {
       return undefined;
+    }
+  }
+
+  /**
+   * Load fallback data when live fetching fails
+   */
+  private loadFallbackData(): FireService[] {
+    try {
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      const fallbackPath = join(__dirname, '..', 'data', 'emergency-services-fallback.json');
+      const data = readFileSync(fallbackPath, 'utf-8');
+      const parsed = JSON.parse(data);
+      return parsed.fire || [];
+    } catch (error) {
+      console.error('Failed to load fallback data:', error);
+      return [];
     }
   }
 
