@@ -1,16 +1,13 @@
 {
   "compilerOptions": {
-    // Target Node.js 18+ (ES2022)
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "lib": ["ES2022"],
-    
-    // Output configuration
+
     "outDir": "./dist",
     "rootDir": "./src",
-    
-    // Strict type checking
+
     "strict": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
@@ -25,21 +22,18 @@
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitUseStrict": false,
-    
-    // Module system configuration
+
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    
-    // Output configuration
+
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "removeComments": false,
     "skipLibCheck": true,
-    
-    // Additional helpful options for CLI apps
+
     "isolatedModules": true,
     "verbatimModuleSyntax": true
   },

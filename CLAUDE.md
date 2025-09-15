@@ -8,7 +8,7 @@ UK Public Sector Organisation Aggregator - A TypeScript CLI tool that aggregates
 - **Runtime**: Node.js 18+ with tsx
 - **Package Manager**: pnpm
 - **Testing**: Jest with ts-jest (80% coverage required)
-- **Key Dependencies**: axios, xlsx, commander, cheerio (minimal dependencies policy)
+- **Key Dependencies**: axios, xlsx, commander, cheerio, pdf-parse (minimal dependencies policy)
 
 ## Commands
 ```bash
@@ -20,7 +20,7 @@ pnpm run lint        # Type check with tsc --noEmit
 ```
 
 ## Project Structure
-```
+```text
 src/
 ├── models/          # TypeScript interfaces
 ├── services/        # Core logic (fetcher, parser, mapper, deduplicator)
@@ -41,29 +41,33 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding NHS Trusts and Local Authorities data sources:
-- NHS Provider Directory: ~215 trusts (HTML scraping with cheerio)
-- DEFRA UK-AIR Local Authorities: ~408 authorities (HTML scraping)
-- New parsers: nhs-parser.ts, local-authority-parser.ts
-- Fail-fast on source unavailability or format changes
+Adding UK Colleges (Scotland, Wales, Northern Ireland):
+- AoC webpage: Dynamic PDF links (must fetch first)
+- PDF parsing: Extract college names from tables
+- Validation: Count must match webpage display
+- New parser: colleges-parser.ts with pdf-parse
+- Fail-fast on webpage/PDF format changes
 
 ## Key Files
-- `specs/004-you-can-pull/spec.md` - NHS/LA feature specification
-- `specs/004-you-can-pull/plan.md` - Implementation plan
-- `specs/004-you-can-pull/contracts/` - Parser contracts
-- `src/services/nhs-parser.ts` - NHS Trust HTML parser (NEW)
-- `src/services/local-authority-parser.ts` - LA HTML parser (NEW)
+- `specs/007-we-re-already/spec.md` - UK Colleges feature specification
+- `specs/007-we-re-already/plan.md` - Implementation plan
+- `specs/007-we-re-already/contracts/` - Parser contracts
+- `src/services/colleges-parser.ts` - Colleges PDF parser (NEW)
+- `src/services/mappers/colleges-mapper.ts` - Maps to Organisation (NEW)
 
 ## Development Notes
-- HTML scraping using cheerio for jQuery-like API
+- HTML scraping using cheerio for webpage parsing
+- PDF parsing using pdf-parse for table extraction
+- Dynamic PDF URLs require fetching webpage first
+- Count validation ensures data integrity
 - Fail-fast approach for nightly runs
-- Foundation Trusts identified by "Foundation" in name
-- Local Authority types inferred from council name patterns
 
 ## Recent Changes
-- Branch 004-you-can-pull: Adding NHS Trusts and Local Authorities
-- Created HTML parsers with cheerio for new data sources
-- Implemented fail-fast error handling for format changes
+- Branch 007-we-re-already: Adding UK Colleges (Scotland, Wales, NI)
+- Integrated pdf-parse for PDF table extraction
+- Added count validation between webpage and PDFs
+- Branch 006-you-can-find: Added emergency services (Police, Fire)
+- Branch 004-you-can-pull: Added NHS Trusts and Local Authorities
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

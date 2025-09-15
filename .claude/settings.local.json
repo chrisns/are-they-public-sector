@@ -16,7 +16,10 @@
       "Bash(sed:*)",
       "Bash(pnpm lint:*)",
       "Bash(pnpm compile:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(chmod:*)",
+      "Bash(./fetch_viewstate_mac.sh:*)",
+      "Bash(./test_no_cookies.sh:*)"
     ],
     "deny": [],
     "ask": []

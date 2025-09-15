@@ -24,7 +24,7 @@ export interface FetcherConfig {
 /**
  * Result of a fetch operation
  */
-export interface FetchResult<T = any> {
+export interface FetchResult<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -75,7 +75,7 @@ export class FetcherService {
     
     try {
       // GOV.UK API returns paginated results
-      let allOrganisations: any[] = [];
+      let allOrganisations: Record<string, unknown>[] = [];
       let currentUrl: string | null = url;
       let pageCount = 0;
       const maxPages = 100; // Safety limit to prevent infinite loops
@@ -267,7 +267,7 @@ export class FetcherService {
    * @param config Optional axios configuration
    * @returns Axios response
    */
-  async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.retryRequest(() => 
       this.axiosInstance.get<T>(url, config)
     );
@@ -281,16 +281,16 @@ export class FetcherService {
   private async retryRequest<T>(
     requestFn: () => Promise<T>
   ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
     
     for (let attempt = 0; attempt < this.config.maxRetries; attempt++) {
       try {
         return await requestFn();
-      } catch (error: any) {
+      } catch (error) {
         lastError = error;
         
         // Don't retry on 4xx errors (except 429)
-        if (error.response?.status >= 400 && error.response?.status < 500 && error.response?.status !== 429) {
+        if (axios.isAxiosError(error) && error.response?.status >= 400 && error.response?.status < 500 && error.response?.status !== 429) {
           throw error;
         }
         
@@ -318,7 +318,7 @@ export class FetcherService {
    * @param error Error object
    * @returns Formatted error message
    */
-  private formatError(error: any): string {
+  private formatError(error: unknown): string {
     if (axios.isAxiosError(error)) {
       if (error.response) {
         return `HTTP ${error.response.status}: ${error.response.statusText}`;

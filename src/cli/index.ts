@@ -47,7 +47,7 @@ function createCli(): Command {
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
     .option('-l, --log-file <path>', 'Log to file in addition to console')
     .option('-q, --quiet', 'Suppress all output except errors', false)
-    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra)')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra, colleges-uk)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -60,7 +60,7 @@ function createCli(): Command {
     .option('-d, --debug', 'Enable debug mode', false)
     .option('-t, --timeout <ms>', 'Request timeout in milliseconds', '30000')
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
-    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra)')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra, colleges-uk)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -107,9 +107,9 @@ async function clearCache(): Promise<void> {
  */
 async function runAggregation(options: CliOptions): Promise<void> {
   const startTime = performance.now();
-  
+
   // Configure logger
-  const loggerConfig: any = {
+  const loggerConfig: Partial<import('./logger.js').LoggerConfig> = {
     debugMode: !!options.debug,
     level: options.quiet ? LogLevel.ERROR : (options.debug ? LogLevel.DEBUG : LogLevel.INFO),
     logToFile: !!options.logFile,
@@ -149,7 +149,7 @@ async function runAggregation(options: CliOptions): Promise<void> {
     }
 
     // Create orchestrator
-    const orchestratorConfig: any = {
+    const orchestratorConfig: import('./orchestrator.js').OrchestratorConfig = {
       cacheEnabled: !!options.cache,
       debugMode: !!options.debug,
       timeout,
@@ -166,12 +166,18 @@ async function runAggregation(options: CliOptions): Promise<void> {
     // Run aggregation
     logger.section('Starting Aggregation Process');
     
-    const result = await orchestrator.run({
+    const runOptions: Parameters<typeof orchestrator.run>[0] = {
       cache: !!options.cache,
       debug: !!options.debug,
       timeout,
       output: outputPath
-    });
+    };
+
+    if (options.source !== undefined) {
+      runOptions.source = options.source;
+    }
+
+    const result = await orchestrator.run(runOptions);
 
     // Calculate duration
     const duration = (performance.now() - startTime) / 1000;
@@ -228,7 +234,7 @@ process.on('uncaughtException', (error: Error) => {
   process.exit(1);
 });
 
-process.on('unhandledRejection', (reason: any) => {
+process.on('unhandledRejection', (reason: unknown) => {
   console.error('\n[FATAL] Unhandled promise rejection:');
   console.error('Reason:', reason);
   process.exit(1);
@@ -261,7 +267,7 @@ async function main(): Promise<void> {
 }
 
 // Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && process.argv[1].endsWith('index.ts') || process.argv[1] && process.argv[1].endsWith('index.js')) {
   main().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);

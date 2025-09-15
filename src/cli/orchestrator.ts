@@ -16,6 +16,7 @@ import {
   createDeduplicator,
   createWriter
 } from '../services/index.js';
+import type { FetchResult } from '../services/index.js';
 import { createSimpleParser, SimpleParserService } from '../services/parser-simple.js';
 import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simple.js';
 import { NHSParser } from '../services/nhs-parser.js';
@@ -29,17 +30,19 @@ import { DevolvedAdminMapper } from '../services/mappers/devolved-admin-mapper.j
 import { PoliceParser } from '../services/police-parser.js';
 import { FireParser } from '../services/fire-parser.js';
 import { DevolvedExtraParser } from '../services/devolved-extra-parser.js';
+import { CollegesParser } from '../services/colleges-parser.js';
 import { PoliceMapper } from '../services/mappers/police-mapper.js';
 import { FireMapper } from '../services/mappers/fire-mapper.js';
 import { DevolvedExtraMapper } from '../services/mappers/devolved-extra-mapper.js';
+import { CollegesMapper } from '../services/mappers/colleges-mapper.js';
 
 // Import models
-import type { Organisation } from '../models/organisation.js';
-import type { 
-  ProcessingResult, 
+import type { Organisation, DataSourceReference } from '../models/organisation.js';
+import type {
+  ProcessingResult,
   ProcessingMetadata,
   ProcessingStatistics,
-  SourceMetadata 
+  SourceMetadata
 } from '../models/processing.js';
 import { DataSourceType, OrganisationType } from '../models/organisation.js';
 
@@ -81,7 +84,24 @@ export interface AggregationResult {
 export interface WorkflowPhase {
   success: boolean;
   error?: Error;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+/**
+ * Extended workflow phases for additional data sources
+ */
+export interface WorkflowPhasesWithExtensions {
+  govUk: WorkflowPhase;
+  onsInstitutional: WorkflowPhase;
+  onsNonInstitutional: WorkflowPhase;
+  nhsTrusts?: WorkflowPhase & { recordCount?: number };
+  localAuthorities?: WorkflowPhase & { recordCount?: number };
+  schools?: WorkflowPhase & { recordCount?: number };
+  devolvedAdmin?: WorkflowPhase & { recordCount?: number };
+  police?: WorkflowPhase & { recordCount?: number };
+  fire?: WorkflowPhase & { recordCount?: number };
+  devolvedExtra?: WorkflowPhase & { recordCount?: number };
+  colleges?: WorkflowPhase & { recordCount?: number };
 }
 
 /**
@@ -116,12 +136,12 @@ export interface WorkflowResult {
  */
 export interface DataFetchResult {
   success: boolean;
-  data?: any;
+  data?: unknown;
   organisations?: Organisation[];
   metadata: {
     source: string;
     fetchedAt: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   error?: Error;
 }
@@ -153,7 +173,7 @@ export interface OutputResult {
     hasRequiredFields: boolean;
   };
   preview: {
-    metadata: any;
+    metadata: unknown;
     organisations: Organisation[];
   };
   error?: Error;
@@ -248,8 +268,8 @@ export class Orchestrator {
    */
   private async getCachedOrFetch(
     cacheKey: string,
-    fetchFn: () => Promise<any>
-  ): Promise<any> {
+    fetchFn: () => Promise<unknown>
+  ): Promise<unknown> {
     if (this.config.cacheEnabled) {
       const cachePath = join(this.config.cacheDir!, `${cacheKey}.json`);
       
@@ -312,7 +332,7 @@ export class Orchestrator {
 
       // Parse the data using simple parser
       this.logger.startProgress('Parsing GOV.UK data...');
-      const parseResult = this.simpleParser.parseGovUkJson(data.data);
+      const parseResult = this.simpleParser.parseGovUkJson((data as FetchResult).data);
       this.logger.stopProgress(`Parsed ${parseResult.data?.length || 0} GOV.UK organisations`);
 
       // Map to standard format using simple mapper
@@ -374,7 +394,7 @@ export class Orchestrator {
       // Download Excel file
       this.logger.startProgress('Downloading ONS Excel file...');
       const excelPath = await this.getCachedOrFetch('ons-excel-data', async () => {
-        const downloadResult = await this.fetcher.downloadOnsExcel(excelUrl);
+        const downloadResult = await this.fetcher.downloadOnsExcel(excelUrl as string);
         if (!downloadResult.success) {
           throw new Error('Failed to download ONS Excel file');
         }
@@ -384,7 +404,7 @@ export class Orchestrator {
 
       // Parse Excel data using simple parser
       this.logger.startProgress('Parsing ONS Excel data...');
-      const parseResult = this.simpleParser.parseOnsExcel(excelPath.filePath || excelPath);
+      const parseResult = this.simpleParser.parseOnsExcel((excelPath as {filePath?: string}).filePath || (excelPath as string));
       
       const institutionalData = parseResult.data?.institutional || [];
       const nonInstitutionalData = parseResult.data?.nonInstitutional || [];
@@ -415,7 +435,7 @@ export class Orchestrator {
         institutionalUnits: institutionalMapped,
         nonInstitutionalUnits: nonInstitutionalMapped,
         metadata: {
-          excelUrl,
+          excelUrl: excelUrl as string,
           dynamicallyResolved: true,
           fetchedAt: new Date().toISOString()
         }
@@ -709,6 +729,39 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch UK Colleges data (Scotland, Wales, Northern Ireland)
+   */
+  async fetchCollegesData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching UK Colleges');
+
+    try {
+      this.logger.startProgress('Fetching colleges from AoC website...');
+
+      const parser = new CollegesParser();
+      const mapper = new CollegesMapper();
+      const result = await parser.aggregate();
+
+      const organisations = result.colleges.map(college => mapper.mapToOrganisation(college));
+
+      this.logger.stopProgress(`Fetched ${result.colleges.length} colleges`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: result.metadata
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch colleges data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'aoc.co.uk', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -723,7 +776,6 @@ export class Orchestrator {
 
     try {
       const sourceFilter = this.config.source?.toLowerCase();
-      console.log(`[ORCHESTRATOR] Source filter: "${sourceFilter}" (config.source: "${this.config.source}")`);
       this.logger.info(`Source filter: ${sourceFilter || 'none (fetching all sources)'}`);
       
       // Fetch GOV.UK data
@@ -840,6 +892,18 @@ export class Orchestrator {
         }
       }
 
+      // Fetch UK Colleges data (Scotland, Wales, Northern Ireland)
+      if (!sourceFilter || sourceFilter === 'colleges' || sourceFilter === 'colleges-uk') {
+        const collegesResult = await this.fetchCollegesData();
+        if (collegesResult.success && collegesResult.organisations) {
+          allOrganisations.push(...collegesResult.organisations);
+          sources.push('aoc.co.uk');
+          this.logger.success(`Added ${collegesResult.organisations.length} UK Colleges`);
+        } else {
+          errors.push(collegesResult.error || new Error('Colleges fetch failed'));
+        }
+      }
+
       // Track memory after fetching
       this.trackMemory();
 
@@ -863,8 +927,8 @@ export class Orchestrator {
         source: source.includes('gov.uk') ? DataSourceType.GOV_UK_API :
                 source.includes('institutional') ? DataSourceType.ONS_INSTITUTIONAL :
                 DataSourceType.ONS_NON_INSTITUTIONAL,
-        recordCount: dedupResult.organisations.filter((org: Organisation) => 
-          org.sources.some((s: any) => s.source === source.replace('-units', '').replace('.uk-api', '_uk_api').replace('-', '_'))
+        recordCount: dedupResult.organisations.filter((org: Organisation) =>
+          org.sources.some((s: DataSourceReference) => s.source.toString() === source.replace('-units', '').replace('.uk-api', '_uk_api').replace('-', '_'))
         ).length,
         retrievedAt: new Date().toISOString()
       }));
@@ -1058,7 +1122,7 @@ export class Orchestrator {
       
       // Fetch NHS Trusts
       const nhsData = await this.fetchNHSData();
-      (result.phases.dataFetching as any).nhsTrusts = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).nhsTrusts = {
         success: nhsData.success,
         ...(nhsData.error && { error: nhsData.error }),
         recordCount: nhsData.organisations?.length || 0
@@ -1066,7 +1130,7 @@ export class Orchestrator {
       
       // Fetch Local Authorities
       const laData = await this.fetchLocalAuthorityData();
-      (result.phases.dataFetching as any).localAuthorities = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).localAuthorities = {
         success: laData.success,
         ...(laData.error && { error: laData.error }),
         recordCount: laData.organisations?.length || 0
@@ -1074,7 +1138,7 @@ export class Orchestrator {
       
       // Fetch Schools
       const schoolsData = await this.fetchSchoolsData();
-      (result.phases.dataFetching as any).schools = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).schools = {
         success: schoolsData.success,
         ...(schoolsData.error && { error: schoolsData.error }),
         recordCount: schoolsData.organisations?.length || 0
@@ -1082,7 +1146,7 @@ export class Orchestrator {
 
       // Fetch Devolved Administrations
       const devolvedData = await this.fetchDevolvedAdminData();
-      (result.phases.dataFetching as any).devolvedAdmin = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).devolvedAdmin = {
         success: devolvedData.success,
         ...(devolvedData.error && { error: devolvedData.error }),
         recordCount: devolvedData.organisations?.length || 0
@@ -1090,7 +1154,7 @@ export class Orchestrator {
 
       // Fetch Police Forces
       const policeData = await this.fetchPoliceData();
-      (result.phases.dataFetching as any).police = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).police = {
         success: policeData.success,
         ...(policeData.error && { error: policeData.error }),
         recordCount: policeData.organisations?.length || 0
@@ -1098,7 +1162,7 @@ export class Orchestrator {
 
       // Fetch Fire Services
       const fireData = await this.fetchFireData();
-      (result.phases.dataFetching as any).fire = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).fire = {
         success: fireData.success,
         ...(fireData.error && { error: fireData.error }),
         recordCount: fireData.organisations?.length || 0
@@ -1106,10 +1170,18 @@ export class Orchestrator {
 
       // Fetch Additional Devolved Bodies
       const devolvedExtraData = await this.fetchDevolvedExtraData();
-      (result.phases.dataFetching as any).devolvedExtra = {
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).devolvedExtra = {
         success: devolvedExtraData.success,
         ...(devolvedExtraData.error && { error: devolvedExtraData.error }),
         recordCount: devolvedExtraData.organisations?.length || 0
+      };
+
+      // Fetch UK Colleges
+      const collegesData = await this.fetchCollegesData();
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).colleges = {
+        success: collegesData.success,
+        ...(collegesData.error && { error: collegesData.error }),
+        recordCount: collegesData.organisations?.length || 0
       };
 
       // Combine all organisations
@@ -1123,7 +1195,8 @@ export class Orchestrator {
         ...(devolvedData.organisations || []),
         ...(policeData.organisations || []),
         ...(fireData.organisations || []),
-        ...(devolvedExtraData.organisations || [])
+        ...(devolvedExtraData.organisations || []),
+        ...(collegesData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)
@@ -1202,6 +1275,7 @@ export class Orchestrator {
     debug?: boolean;
     timeout?: number;
     output?: string;
+    source?: string;
   }): Promise<ProcessingResult> {
     // Update config with CLI options
     if (options) {
@@ -1209,6 +1283,9 @@ export class Orchestrator {
       if (options.debug !== undefined) this.config.debugMode = options.debug;
       if (options.timeout !== undefined) this.config.timeout = options.timeout;
       if (options.output !== undefined) this.config.outputPath = options.output;
+      if (options.source !== undefined) {
+        this.config.source = options.source;
+      }
       
       // Update logger if debug mode changed
       if (options.debug) {
@@ -1224,37 +1301,71 @@ export class Orchestrator {
       cache: this.config.cacheEnabled,
       debug: this.config.debugMode,
       timeout: `${this.config.timeout}ms`,
-      output: this.config.outputPath
+      output: this.config.outputPath,
+      source: this.config.source || 'all'
     });
 
     try {
-      // Execute the workflow
-      const result = await this.executeCompleteWorkflow();
+      // Execute the workflow (use performCompleteAggregation which respects source filter)
+      const aggregationResult = await this.performCompleteAggregation();
+
+      // Convert to WorkflowResult format
+      const result: WorkflowResult = {
+        success: aggregationResult.success,
+        phases: {
+          dataFetching: {
+            govUk: { success: true, recordCount: aggregationResult.organisations.length },
+            onsInstitutional: { success: true, recordCount: 0 },
+            onsNonInstitutional: { success: true, recordCount: 0 }
+          },
+          dataMapping: {
+            success: true,
+            govUk: { success: true },
+            onsInstitutional: { success: true },
+            onsNonInstitutional: { success: true }
+          },
+          deduplication: {
+            success: true,
+            duplicatesFound: aggregationResult.metadata?.statistics?.duplicatesFound || 0,
+            finalCount: aggregationResult.organisations.length
+          },
+          outputGeneration: {
+            success: true,
+            filePath: this.config.outputPath!,
+            fileSize: 0,
+            recordCount: aggregationResult.organisations.length
+          }
+        },
+        completedAt: new Date().toISOString(),
+        totalDurationMs: Date.now() - Date.now() // Will be updated if needed
+      };
       
       if (!result.success) {
         throw new Error('Workflow execution failed');
       }
 
       // Build final result
-      const outputPath = result.phases.outputGeneration.filePath || this.config.outputPath!;
-      const recordCount = result.phases.outputGeneration.recordCount || 0;
-      
-      // Read the written file to get the actual data
-      const outputContent = readFileSync(outputPath, 'utf-8');
-      const outputData = JSON.parse(outputContent);
-      
-      return {
-        organisations: outputData.organisations || [],
-        metadata: outputData.metadata || {
+      // Write the output file
+      const outputPath = this.config.outputPath!;
+      const outputData = {
+        organisations: aggregationResult.organisations,
+        metadata: aggregationResult.metadata || {
           processedAt: new Date().toISOString(),
           sources: [],
           statistics: {
-            totalOrganisations: recordCount,
-            duplicatesFound: result.phases.deduplication?.duplicatesFound || 0,
+            totalOrganisations: aggregationResult.organisations.length,
+            duplicatesFound: aggregationResult.metadata?.statistics?.duplicatesFound || 0,
             conflictsDetected: 0,
             organisationsByType: {} as Record<OrganisationType, number>
           }
         }
+      };
+
+      writeFileSync(outputPath, JSON.stringify(outputData, null, 2));
+
+      return {
+        organisations: aggregationResult.organisations,
+        metadata: aggregationResult.metadata || outputData.metadata
       };
     } catch (error) {
       this.logger.error('Aggregation failed', error);

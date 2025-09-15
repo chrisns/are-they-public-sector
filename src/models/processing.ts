@@ -15,7 +15,7 @@ export interface AuditRecord {
   timestamp: string;              // ISO datetime
   action: 'created' | 'updated' | 'merged' | 'flagged';
   changes?: AuditChange[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -23,8 +23,8 @@ export interface AuditRecord {
  */
 export interface AuditChange {
   field: string;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   source: DataSourceType;
 }
 
@@ -33,7 +33,7 @@ export interface AuditChange {
  */
 export interface ConflictValue {
   source: DataSourceType;
-  value: any;
+  value: unknown;
   retrievedAt: string;
 }
 
@@ -41,7 +41,7 @@ export interface ConflictValue {
  * Conflict resolution details
  */
 export interface ConflictResolution {
-  resolvedValue: any;
+  resolvedValue: unknown;
   resolvedBy?: string;
   resolvedAt?: string;
   reason?: string;
@@ -104,7 +104,7 @@ export interface ProcessingError {
   source: DataSourceType;
   recordId?: string;
   error: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -143,22 +143,22 @@ export interface ValidationResult {
   errors?: Array<{
     field: string;
     message: string;
-    value?: any;
+    value?: unknown;
   }>;
   warnings?: Array<{
     field: string;
     message: string;
-    value?: any;
+    value?: unknown;
   }>;
 }
 
 /**
  * Transformation result from source to unified model
  */
-export interface TransformationResult<T = any> {
+export interface TransformationResult<T = unknown> {
   success: boolean;
   data?: T;
   errors?: string[];
   warnings?: string[];
-  unmappedFields?: Record<string, any>;
+  unmappedFields?: Record<string, unknown>;
 }

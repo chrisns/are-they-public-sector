@@ -15,7 +15,7 @@ export class DevolvedAdminMapper {
     const orgType = this.determineOrgType(entity.type);
     
     // Build additional properties object
-    const additionalProperties: Record<string, any> = {
+    const additionalProperties: Record<string, string | string[] | undefined> = {
       entityType: entity.type,
       administration: entity.administration,
       subcategory: this.determineSubcategory(entity)

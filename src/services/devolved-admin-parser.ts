@@ -40,7 +40,7 @@ export class DevolvedAdminParser {
   /**
    * Load and parse the static JSON data file
    */
-  private loadData(): any {
+  private loadData(): { entities: DevolvedAdmin[] } {
     try {
       const rawData = fs.readFileSync(this.dataPath, 'utf-8');
       return JSON.parse(rawData);
@@ -88,20 +88,25 @@ export class DevolvedAdminParser {
   /**
    * Validate entity data
    */
-  private validateEntity(entity: any): boolean {
-    if (!entity.id || !entity.name || !entity.type || !entity.administration) {
+  private validateEntity(entity: unknown): entity is DevolvedAdmin {
+    if (typeof entity !== 'object' || entity === null) {
+      return false;
+    }
+
+    const obj = entity as Record<string, unknown>;
+    if (!obj.id || !obj.name || !obj.type || !obj.administration) {
       return false;
     }
     
     // Validate administration is one of the expected values
     const validAdministrations = ['scotland', 'wales', 'northern_ireland'];
-    if (!validAdministrations.includes(entity.administration)) {
+    if (typeof obj.administration !== 'string' || !validAdministrations.includes(obj.administration)) {
       return false;
     }
-    
+
     // Validate type is one of the expected values
     const validTypes = ['parliament', 'government', 'department', 'directorate', 'agency', 'public_body'];
-    if (!validTypes.includes(entity.type)) {
+    if (typeof obj.type !== 'string' || !validTypes.includes(obj.type)) {
       return false;
     }
     
@@ -111,7 +116,7 @@ export class DevolvedAdminParser {
   /**
    * Parse and validate entities
    */
-  parseEntities(rawData: any[]): DevolvedAdmin[] {
+  parseEntities(rawData: unknown[]): DevolvedAdmin[] {
     if (!Array.isArray(rawData)) {
       throw new DevolvedAdminError(
         'Expected array of entities',
@@ -119,7 +124,7 @@ export class DevolvedAdminParser {
       );
     }
 
-    return rawData.filter(entity => {
+    return rawData.filter((entity): entity is DevolvedAdmin => {
       const isValid = this.validateEntity(entity);
       if (!isValid) {
         console.warn(`Skipping invalid entity: ${JSON.stringify(entity)}`);

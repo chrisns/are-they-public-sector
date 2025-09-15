@@ -1,6 +1,10 @@
 import { NHSParser } from '../../src/services/nhs-parser';
 import axios from 'axios';
 
+interface TrustTestData {
+  name: string;
+}
+
 describe('NHS Fetcher Integration', () => {
   let parser: NHSParser;
 
@@ -19,7 +23,7 @@ describe('NHS Fetcher Integration', () => {
       expect(Array.isArray(result.trusts)).toBe(true);
       
       // Should contain known NHS Trusts
-      const trustNames = result.trusts.map((t: any) => t.name);
+      const trustNames = result.trusts.map((t: TrustTestData) => t.name);
       
       // Check for some well-known trusts (these should be stable)
       const hasKnownTrusts = trustNames.some((name: string) => 

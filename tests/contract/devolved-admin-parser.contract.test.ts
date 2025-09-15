@@ -1,9 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { DevolvedAdminParser } from '../../src/services/devolved-admin-parser.js';
-import type { 
-  DevolvedAdmin, 
-  DevolvedAdminResponse 
-} from '../../src/models/devolved-admin.js';
+import { DevolvedNation } from '../../src/models/devolved-admin.js';
 
 describe('DevolvedAdminParser Contract Tests', () => {
   let parser: DevolvedAdminParser;
@@ -108,8 +105,8 @@ describe('DevolvedAdminParser Contract Tests', () => {
 
   describe('getByAdministration', () => {
     it('should return only Scottish entities', async () => {
-      const scottish = await parser.getByAdministration('scotland' as any);
-      
+      const scottish = await parser.getByAdministration(DevolvedNation.SCOTLAND);
+
       expect(scottish.length).toBeGreaterThan(0);
       scottish.forEach(entity => {
         expect(entity.administration).toBe('scotland');
@@ -117,8 +114,8 @@ describe('DevolvedAdminParser Contract Tests', () => {
     });
 
     it('should return only Welsh entities', async () => {
-      const welsh = await parser.getByAdministration('wales' as any);
-      
+      const welsh = await parser.getByAdministration(DevolvedNation.WALES);
+
       expect(welsh.length).toBeGreaterThan(0);
       welsh.forEach(entity => {
         expect(entity.administration).toBe('wales');
@@ -126,8 +123,8 @@ describe('DevolvedAdminParser Contract Tests', () => {
     });
 
     it('should return only Northern Ireland entities', async () => {
-      const ni = await parser.getByAdministration('northern_ireland' as any);
-      
+      const ni = await parser.getByAdministration(DevolvedNation.NORTHERN_IRELAND);
+
       expect(ni.length).toBeGreaterThan(0);
       ni.forEach(entity => {
         expect(entity.administration).toBe('northern_ireland');

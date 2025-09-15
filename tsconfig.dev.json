@@ -1,7 +1,6 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    // Relax some strict settings for development
     "exactOptionalPropertyTypes": false,
     "noUncheckedIndexedAccess": false,
     "noUnusedLocals": false,

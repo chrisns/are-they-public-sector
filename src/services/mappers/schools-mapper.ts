@@ -15,7 +15,7 @@ export class SchoolsMapper {
     const orgType = this.determineOrgType(school.phaseType);
     
     // Build additional properties object
-    const additionalProperties: Record<string, any> = {
+    const additionalProperties: Record<string, unknown> = {
       urn: school.urn,
       localAuthority: school.localAuthority,
       laestab: school.laestab,

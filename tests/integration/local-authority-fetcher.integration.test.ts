@@ -1,6 +1,11 @@
 import { LocalAuthorityParser } from '../../src/services/local-authority-parser';
 import axios from 'axios';
 
+interface AuthorityTestData {
+  name: string;
+  url: string;
+}
+
 describe('Local Authority Fetcher Integration', () => {
   let parser: LocalAuthorityParser;
 
@@ -19,7 +24,7 @@ describe('Local Authority Fetcher Integration', () => {
       expect(Array.isArray(result.authorities)).toBe(true);
       
       // Should contain known local authorities
-      const authorityNames = result.authorities.map((a: any) => a.name);
+      const authorityNames = result.authorities.map((a: AuthorityTestData) => a.name);
       
       // Check for some well-known authorities
       const hasKnownAuthorities = authorityNames.some((name: string) => 
@@ -34,7 +39,7 @@ describe('Local Authority Fetcher Integration', () => {
       const result = await parser.fetchAndParse(url);
       
       // All authorities should have URLs
-      result.authorities.forEach((authority: any) => {
+      result.authorities.forEach((authority: AuthorityTestData) => {
         expect(authority.url).toBeDefined();
         expect(authority.url).toMatch(/^https?:\/\//);
       });

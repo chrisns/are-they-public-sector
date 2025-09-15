@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import type { 
-  School, 
-  GIASSchoolResponse, 
-  FetchPageResult,
-  SchoolsParserOptions 
+import type {
+  School,
+  GIASSchoolResponse
 } from '../../src/models/school.js';
 import { SchoolsParser } from '../../src/services/schools-parser.js';
 import axios from 'axios';
@@ -336,8 +334,8 @@ describe('SchoolsParser Contract Tests', () => {
 
   describe('Error Handling', () => {
     it('should throw error on unexpected response format', () => {
-      const invalidResponse = { error: 'Unexpected format' } as any;
-      
+      const invalidResponse = { error: 'Unexpected format' } as unknown as GIASSchoolResponse;
+
       expect(() => parser.parseResponse(invalidResponse))
         .toThrow();
     });

@@ -90,13 +90,21 @@ export class SchoolsParser {
 
       } catch (error) {
         lastError = error as Error;
-        
+
+        // Don't retry on format/validation errors - fail fast
+        if (error instanceof SchoolsParserError &&
+            (error.code === SchoolsErrorCode.FORMAT_CHANGE_ERROR ||
+             error.code === SchoolsErrorCode.VALIDATION_ERROR ||
+             error.code === SchoolsErrorCode.PARSE_ERROR)) {
+          throw error;
+        }
+
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError;
-          
+
           // Don't retry on 4xx errors (except 429)
-          if (axiosError.response && 
-              axiosError.response.status >= 400 && 
+          if (axiosError.response &&
+              axiosError.response.status >= 400 &&
               axiosError.response.status < 500 &&
               axiosError.response.status !== 429) {
             throw new SchoolsParserError(
@@ -104,14 +112,14 @@ export class SchoolsParser {
               SchoolsErrorCode.NETWORK_ERROR
             );
           }
-          
+
           // Rate limiting
           if (axiosError.response?.status === 429) {
             console.log(`Rate limited, attempt ${attempt + 1}/${opts.maxRetries}`);
             continue;
           }
         }
-        
+
         console.log(`Fetch attempt ${attempt + 1}/${opts.maxRetries} failed:`, error);
       }
     }
@@ -204,7 +212,7 @@ export class SchoolsParser {
   /**
    * Transform raw GIAS response to School entities
    */
-  parseResponse(rawData: any[]): School[] {
+  parseResponse(rawData: unknown[]): School[] {
     if (!Array.isArray(rawData)) {
       throw new SchoolsParserError(
         'Expected array response from GIAS API',
@@ -214,37 +222,48 @@ export class SchoolsParser {
 
     return rawData.map((item, index) => {
       try {
+        // Type guard: ensure item is an object with expected properties
+        if (!item || typeof item !== 'object' || !('name' in item) || !('urn' in item)) {
+          throw new SchoolsParserError(
+            `Invalid school data at index ${index}`,
+            SchoolsErrorCode.VALIDATION_ERROR
+          );
+        }
+
+        const schoolItem = item as Record<string, unknown>;
+
         // Validate required fields
-        if (!item.name || item.name.trim() === '') {
+        if (!schoolItem.name || typeof schoolItem.name !== 'string' || schoolItem.name.trim() === '') {
           throw new SchoolsParserError(
             'School name is required',
             SchoolsErrorCode.VALIDATION_ERROR
           );
         }
 
-        if (!item.urn || typeof item.urn !== 'number') {
+        if (!schoolItem.urn || typeof schoolItem.urn !== 'number') {
           throw new SchoolsParserError(
-            `Invalid URN for school: ${item.name}`,
+            `Invalid URN for school: ${schoolItem.name}`,
             SchoolsErrorCode.VALIDATION_ERROR
           );
         }
 
         const school: School = {
-          urn: item.urn,
-          name: item.name,
-          status: item.status || 'Unknown',
-          phaseType: item.phaseType || '',
-          localAuthority: item.localAuthority || '',
-          laestab: item.laestab || '',
-          address: item.address || ''
+          urn: schoolItem.urn,
+          name: schoolItem.name,
+          status: (typeof schoolItem.status === 'string' ? schoolItem.status : null) || 'Unknown',
+          phaseType: (typeof schoolItem.phaseType === 'string' ? schoolItem.phaseType : null) || '',
+          localAuthority: (typeof schoolItem.localAuthority === 'string' ? schoolItem.localAuthority : null) || '',
+          laestab: (typeof schoolItem.laestab === 'string' ? schoolItem.laestab : null) || '',
+          address: (typeof schoolItem.address === 'string' ? schoolItem.address : null) || ''
         };
 
         // Handle location (can be null or have null values)
-        if (item.location && 
-            item.location.latitude !== null && 
-            item.location.longitude !== null) {
-          school.latitude = item.location.latitude;
-          school.longitude = item.location.longitude;
+        const location = schoolItem.location as { latitude?: unknown; longitude?: unknown } | null | undefined;
+        if (location &&
+            typeof location.latitude === 'number' &&
+            typeof location.longitude === 'number') {
+          school.latitude = location.latitude;
+          school.longitude = location.longitude;
         }
 
         return school;

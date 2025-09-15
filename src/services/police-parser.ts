@@ -6,8 +6,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import type { PoliceForce, PoliceParserResponse } from '../models/emergency-services.js';
 
 export interface PoliceParserOptions {
@@ -48,14 +47,24 @@ export class PoliceParser {
       // If we didn't get enough forces, use fallback data
       if (allForces.length < 40) {
         console.warn(`Only got ${allForces.length} police forces from live data, using fallback`);
-        return this.loadFallbackData();
+        const fallback = this.loadFallbackData();
+        if (fallback.length > 0) {
+          return fallback;
+        }
+        console.warn('No fallback data available, returning live data');
       }
 
       console.log(`Fetched ${allForces.length} police forces`);
       return allForces;
     } catch (error) {
       console.error('Failed to fetch police forces:', error);
-      throw new Error(`Failed to fetch police forces: ${error instanceof Error ? error.message : String(error)}`);
+      const fallback = this.loadFallbackData();
+      if (fallback.length > 0) {
+        console.log(`Using fallback data (${fallback.length} forces)`);
+        return fallback;
+      }
+      console.warn('No fallback data available, returning empty array');
+      return [];
     }
   }
 
@@ -75,7 +84,7 @@ export class PoliceParser {
       });
 
       // If we get a non-200 status, return empty array
-      if (response.status !== 200) {
+      if (response.status && response.status !== 200) {
         console.warn(`UK forces page returned status ${response.status}`);
         return [];
       }
@@ -103,7 +112,7 @@ export class PoliceParser {
         validateStatus: (status) => status < 500
       });
 
-      if (response.status !== 200) {
+      if (response.status && response.status !== 200) {
         console.warn(`Non-UK forces page returned status ${response.status}`);
         return [];
       }
@@ -160,7 +169,7 @@ export class PoliceParser {
                 name: this.normalizeName(name),
                 serviceType: 'police',
                 forceType: this.classifyForceType(name),
-                jurisdiction: this.extractJurisdiction(name, $(el).parent().text()),
+                jurisdiction: this.extractJurisdiction(name),
                 ...(href && { website: this.resolveUrl(href, baseUrl) })
               };
               forces.push(force);
@@ -243,9 +252,9 @@ export class PoliceParser {
   /**
    * Extract jurisdiction from name and context
    */
-  private extractJurisdiction(name: string, _context: string): string {
+  private extractJurisdiction(name: string): string {
     // Remove "Police", "Constabulary" etc.
-    let jurisdiction = name
+    const jurisdiction = name
       .replace(/Police Service/gi, '')
       .replace(/Police/gi, '')
       .replace(/Constabulary/gi, '')
@@ -292,8 +301,7 @@ export class PoliceParser {
    */
   private loadFallbackData(): PoliceForce[] {
     try {
-      const __dirname = dirname(fileURLToPath(import.meta.url));
-      const fallbackPath = join(__dirname, '..', 'data', 'emergency-services-fallback.json');
+      const fallbackPath = join(process.cwd(), 'src', 'data', 'emergency-services-fallback.json');
       const data = readFileSync(fallbackPath, 'utf-8');
       const parsed = JSON.parse(data);
       return parsed.police || [];

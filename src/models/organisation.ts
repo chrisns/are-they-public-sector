@@ -106,7 +106,7 @@ export interface Organisation {
   dataQuality: DataQuality;
   
   // Unmapped fields preservation
-  additionalProperties?: Record<string, any>;
+  additionalProperties?: Record<string, unknown>;
 }
 
 /**
@@ -115,7 +115,7 @@ export interface Organisation {
 export interface FieldMapping {
   sourceField: string;
   targetField: keyof Organisation;
-  transformer?: (value: any) => any;
+  transformer?: (value: unknown) => unknown;
   required?: boolean;
 }
 

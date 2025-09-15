@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { SchoolsParser } from '../../src/services/schools-parser.js';
-import type { School, SchoolsResponse } from '../../src/models/school.js';
 import axios from 'axios';
 
 // Integration tests with mocked HTTP responses for reliability
@@ -39,14 +38,18 @@ describe('Schools Aggregation Integration Tests', () => {
     name: 'Duplicate School Name'  // Different name but same URN
   };
 
+  let axiosGetSpy: jest.SpyInstance;
+
   beforeAll(() => {
     parser = new SchoolsParser();
-    
-    // Mock axios for predictable testing
-    jest.spyOn(axios, 'get').mockImplementation(async (url: string) => {
+  });
+
+  beforeEach(() => {
+    // Reset and setup mocks before each test
+    axiosGetSpy = jest.spyOn(axios, 'get').mockImplementation(async (url: string) => {
       const urlObj = new URL(url);
       const startIndex = parseInt(urlObj.searchParams.get('startIndex') || '0');
-      
+
       if (startIndex === 0) {
         return { data: mockSchoolsPage1 };
       } else if (startIndex === 100) {
@@ -58,7 +61,7 @@ describe('Schools Aggregation Integration Tests', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    axiosGetSpy?.mockRestore();
   });
 
   afterAll(() => {
@@ -158,11 +161,11 @@ describe('Schools Aggregation Integration Tests', () => {
     });
 
     it('should handle single page response', async () => {
-      // Mock single page response
-      jest.spyOn(axios, 'get').mockImplementation(async (url: string) => {
+      // Override the mock for this test
+      axiosGetSpy.mockImplementation(async (url: string) => {
         const urlObj = new URL(url);
         const startIndex = parseInt(urlObj.searchParams.get('startIndex') || '0');
-        
+
         if (startIndex === 0) {
           return { data: mockSchoolsPage2 };  // Just 50 schools
         } else {
@@ -178,8 +181,8 @@ describe('Schools Aggregation Integration Tests', () => {
   describe('Error Recovery', () => {
     it('should retry on network failure', async () => {
       let attemptCount = 0;
-      
-      jest.spyOn(axios, 'get').mockImplementation(async () => {
+
+      axiosGetSpy.mockImplementation(async () => {
         attemptCount++;
         if (attemptCount <= 2) {
           throw new Error('Network error');
@@ -188,18 +191,21 @@ describe('Schools Aggregation Integration Tests', () => {
       });
 
       const schools = await parser.fetchAll();
-      
+
       expect(attemptCount).toBeGreaterThan(2);
       expect(schools.length).toBeGreaterThan(0);
     });
 
     it('should handle rate limiting with exponential backoff', async () => {
       let attemptCount = 0;
-      
-      jest.spyOn(axios, 'get').mockImplementation(async () => {
+
+      axiosGetSpy.mockImplementation(async () => {
         attemptCount++;
         if (attemptCount <= 1) {
-          const error: any = new Error('Rate limited');
+          const error = new Error('Rate limited') as Error & {
+            response: { status: number };
+            isAxiosError: boolean;
+          };
           error.response = { status: 429 };
           error.isAxiosError = true;
           throw error;
@@ -210,21 +216,21 @@ describe('Schools Aggregation Integration Tests', () => {
       const startTime = Date.now();
       await parser.fetchPage(0);
       const duration = Date.now() - startTime;
-      
+
       // Should have delayed due to backoff
       expect(duration).toBeGreaterThanOrEqual(1000);
       expect(attemptCount).toBe(2);
     });
 
     it('should fail fast on format changes', async () => {
-      const mockGet = jest.spyOn(axios, 'get').mockImplementation(async () => {
+      // Override the default mock for this test
+      axiosGetSpy.mockImplementation(async () => {
         return { data: { error: 'Unexpected format' } };
       });
 
-      await expect(parser.fetchPage(0)).rejects.toThrow();
-      
-      mockGet.mockRestore();
-    }, 30000);
+      // Should throw immediately without retries for format errors
+      await expect(parser.fetchPage(0)).rejects.toThrow('Unexpected response format from GIAS API');
+    }, 5000);
   });
 
   describe('Metadata Generation', () => {
@@ -232,27 +238,41 @@ describe('Schools Aggregation Integration Tests', () => {
       const beforeFetch = new Date();
       const result = await parser.aggregate();
       const afterFetch = new Date();
-      
+
       expect(result.metadata.source).toBe('GIAS');
-      
+
       const fetchedAt = new Date(result.metadata.fetchedAt);
       expect(fetchedAt.getTime()).toBeGreaterThanOrEqual(beforeFetch.getTime());
       expect(fetchedAt.getTime()).toBeLessThanOrEqual(afterFetch.getTime());
-      
+
       expect(result.metadata.totalCount).toBe(result.schools.length);
       expect(result.metadata.openCount).toBe(result.schools.length);
-    }, 30000);
+    }, 10000);
   });
 
   describe('Performance', () => {
     it('should complete aggregation within reasonable time', async () => {
+      // Override mock to prevent empty page backoff delays
+      axiosGetSpy.mockImplementation(async (url: string) => {
+        const urlObj = new URL(url);
+        const startIndex = parseInt(urlObj.searchParams.get('startIndex') || '0');
+
+        if (startIndex === 0) {
+          return { data: mockSchoolsPage1 };
+        } else if (startIndex === 100) {
+          return { data: mockSchoolsPage2 };
+        } else {
+          return { data: [] };  // Empty array signals end of pagination
+        }
+      });
+
       const startTime = Date.now();
-      const result = await parser.aggregate({ delayMs: 10 }); // Faster for testing
+      const result = await parser.aggregate({ delayMs: 0 }); // No delay for testing
       const duration = Date.now() - startTime;
-      
-      // Should complete quickly with mocked data
-      expect(duration).toBeLessThan(5000);
+
+      // Should complete quickly with mocked data (allow for processing time but no network delays)
+      expect(duration).toBeLessThan(5000); // More generous to account for processing
       expect(result.schools.length).toBeGreaterThan(0);
-    }, 30000);
+    }, 10000);
   });
 });

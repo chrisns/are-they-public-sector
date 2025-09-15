@@ -45,20 +45,18 @@ describe('Devolved Admin Aggregation Integration Tests', () => {
     });
 
     it('should correctly classify organisation types', () => {
-      const parliaments = entities.filter(e => e.type === 'parliament');
       const mappedParliaments = organisations.filter(
         o => entities.find(e => `devolved-${e.id}` === o.id)?.type === 'parliament'
       );
-      
+
       mappedParliaments.forEach(org => {
         expect(org.type).toBe(OrganisationType.LEGISLATIVE_BODY);
       });
-      
-      const departments = entities.filter(e => e.type === 'department');
+
       const mappedDepartments = organisations.filter(
         o => entities.find(e => `devolved-${e.id}` === o.id)?.type === 'department'
       );
-      
+
       mappedDepartments.forEach(org => {
         expect(org.type).toBe(OrganisationType.MINISTERIAL_DEPARTMENT);
       });

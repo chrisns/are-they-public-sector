@@ -116,7 +116,7 @@ export class Logger {
   /**
    * Format log message with timestamp and level
    */
-  private formatMessage(level: LogLevel, message: string, context?: any): string {
+  private formatMessage(level: LogLevel, message: string, context?: unknown): string {
     const timestamp = new Date().toISOString();
     const levelName = LogLevel[level].padEnd(5);
     const elapsed = ((performance.now() - this.startTime) / 1000).toFixed(3);
@@ -133,7 +133,7 @@ export class Logger {
   /**
    * Write log message to console and/or file
    */
-  private writeLog(level: LogLevel, message: string, context?: any): void {
+  private writeLog(level: LogLevel, message: string, context?: unknown): void {
     if (level > this.config.level) return;
 
     // Clear progress indicator if active
@@ -167,42 +167,50 @@ export class Logger {
   /**
    * Log error message
    */
-  error(message: string, error?: Error | any): void {
-    const context = error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      ...error
-    } : undefined;
-    
+  error(message: string, error?: Error | unknown): void {
+    let context: unknown = undefined;
+
+    if (error) {
+      if (error instanceof Error) {
+        context = {
+          name: error.name,
+          message: error.message,
+          stack: error.stack,
+          ...error
+        };
+      } else {
+        context = error;
+      }
+    }
+
     this.writeLog(LogLevel.ERROR, message, context);
   }
 
   /**
    * Log warning message
    */
-  warn(message: string, context?: any): void {
+  warn(message: string, context?: unknown): void {
     this.writeLog(LogLevel.WARN, message, context);
   }
 
   /**
    * Log info message
    */
-  info(message: string, context?: any): void {
+  info(message: string, context?: unknown): void {
     this.writeLog(LogLevel.INFO, message, context);
   }
 
   /**
    * Log debug message
    */
-  debug(message: string, context?: any): void {
+  debug(message: string, context?: unknown): void {
     this.writeLog(LogLevel.DEBUG, message, context);
   }
 
   /**
    * Log trace message
    */
-  trace(message: string, context?: any): void {
+  trace(message: string, context?: unknown): void {
     this.writeLog(LogLevel.TRACE, message, context);
   }
 
@@ -310,7 +318,7 @@ export class Logger {
   /**
    * Format error for display
    */
-  formatError(error: Error | any): string {
+  formatError(error: Error | unknown): string {
     if (error instanceof Error) {
       let message = `Error: ${error.message}`;
       
@@ -343,7 +351,7 @@ export class Logger {
   /**
    * Log success message with green color
    */
-  success(message: string, context?: any): void {
+  success(message: string, context?: unknown): void {
     const color = this.config.useColors ? '\x1b[32m' : ''; // Green
     const reset = this.resetColor();
     const formatted = this.formatMessage(LogLevel.INFO, `✓ ${message}`, context);

@@ -7,7 +7,7 @@
 [![Coverage](https://img.shields.io/badge/Coverage-80%25%2B-brightgreen)](https://jestjs.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
 
-A powerful TypeScript CLI tool that aggregates UK public sector organisation data from multiple government sources into a unified, deduplicated JSON format. This tool brings together data from **10 different sources**, including over **30,000 schools**, **400+ local authorities**, **200+ NHS trusts**, **45+ police forces**, **50+ fire services**, and all UK government departments and devolved administrations.
+A powerful TypeScript CLI tool that aggregates UK public sector organisation data from multiple government sources into a unified, deduplicated JSON format. This tool brings together data from **11 different sources**, including over **30,000 schools**, **400+ local authorities**, **200+ NHS trusts**, **45+ police forces**, **50+ fire services**, **43 further education colleges**, and all UK government departments and devolved administrations.
 
 ## 🚀 Why This Matters
 
@@ -32,6 +32,7 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 - **10,000+ Public Sector Units** - From ONS Public Sector Classification Guide
 - **27 Devolved Entities** - Scottish Parliament, Welsh Senedd, NI Assembly and departments
 - **Additional Devolved Bodies** - Scottish, Welsh, and NI agencies not in core data
+- **43 Further Education Colleges** - FE colleges from Scotland, Wales, and Northern Ireland
 
 ### 🛠 Technical Excellence
 - **Multi-Source Aggregation**: Seamlessly combines JSON APIs, Excel files, HTML scraping, and static data
@@ -55,6 +56,7 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 | **ONS Classification** | ~10,000 | Excel | Comprehensive public sector classification guide |
 | **Devolved Administrations** | 27 | Static | Scottish, Welsh, NI parliaments and departments |
 | **Additional Devolved Bodies** | ~15 | HTML | Scottish, Welsh, NI agencies from gov.uk guidance |
+| **FE Colleges** | 43 | PDF/HTML | Further Education colleges from AoC website |
 
 ## 🚦 Quick Start
 
@@ -96,6 +98,9 @@ pnpm run compile -- --source fire
 
 # Aggregate additional devolved bodies
 pnpm run compile -- --source devolved-extra
+
+# Aggregate Further Education colleges
+pnpm run compile -- --source colleges
 ```
 
 ## 📁 Output Format
@@ -155,7 +160,7 @@ The tool generates a structured JSON file with comprehensive organisation data:
 
 The project follows clean architecture principles with clear separation of concerns:
 
-```
+```text
 src/
 ├── cli/                    # Command-line interface
 │   ├── index.ts           # Entry point

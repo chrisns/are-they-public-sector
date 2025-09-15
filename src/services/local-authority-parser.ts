@@ -7,8 +7,8 @@ export class LocalAuthorityParser {
     try {
       const html = await this.fetchHTML(url);
       return this.parseHTML(html);
-    } catch (error: any) {
-      if (error.message.includes('structure changed')) {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message.includes('structure changed')) {
         throw error;
       }
       throw new Error('Failed to fetch DEFRA UK-AIR Local Authorities page');
@@ -28,7 +28,7 @@ export class LocalAuthorityParser {
         timeout: 30000
       });
       return response.data;
-    } catch (error) {
+    } catch {
       throw new Error('Failed to fetch DEFRA UK-AIR Local Authorities page');
     }
   }

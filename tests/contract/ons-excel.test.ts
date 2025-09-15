@@ -9,7 +9,6 @@
 import { describe, test, expect, beforeAll } from '@jest/globals';
 import { createSimpleParser } from '../../src/services/parser-simple';
 import * as fs from 'fs';
-import * as path from 'path';
 
 describe('ONS Excel Contract Tests', () => {
   let parser: ReturnType<typeof createSimpleParser>;
@@ -20,8 +19,7 @@ describe('ONS Excel Contract Tests', () => {
 
   test('should parse ONS Excel file structure correctly', () => {
     // Mock test - in real scenario would download and parse actual file
-    const mockFilePath = path.join(process.cwd(), 'tests', 'mocks', 'ons-sample.xlsx');
-    
+
     // For actual contract testing (disabled by default)
     if (process.env.TEST_REAL_API === 'true' && fs.existsSync('temp_ons_debug.xls')) {
       const result = parser.parseOnsExcel('temp_ons_debug.xls');

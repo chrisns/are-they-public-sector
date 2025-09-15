@@ -6,8 +6,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import type { DevolvedBody, DevolvedParserResponse } from '../models/emergency-services.js';
 import { DevolvedAdminParser } from './devolved-admin-parser.js';
 
@@ -42,7 +41,7 @@ export class DevolvedExtraParser {
       });
 
       // If we get a non-200 status, return empty array
-      if (response.status !== 200) {
+      if (response.status && response.status !== 200) {
         console.warn(`Devolved bodies page returned status ${response.status}`);
         return [];
       }
@@ -62,14 +61,23 @@ export class DevolvedExtraParser {
       if (deduplicated.length < 10) {
         console.warn(`Only got ${deduplicated.length} devolved bodies from live data, using fallback`);
         const fallback = this.loadFallbackData();
-        return await this.deduplicateAgainstExisting(fallback);
+        if (fallback.length > 0) {
+          return await this.deduplicateAgainstExisting(fallback);
+        }
+        console.warn('No fallback data available, returning live data');
       }
 
       console.log(`Fetched ${deduplicated.length} new devolved bodies`);
       return deduplicated;
     } catch (error) {
       console.error('Failed to fetch devolved bodies:', error);
-      throw new Error(`Failed to fetch devolved bodies: ${error instanceof Error ? error.message : String(error)}`);
+      const fallback = this.loadFallbackData();
+      if (fallback.length > 0) {
+        console.log(`Using fallback data (${fallback.length} bodies)`);
+        return await this.deduplicateAgainstExisting(fallback);
+      }
+      console.warn('No fallback data available, returning empty array');
+      return [];
     }
   }
 
@@ -182,10 +190,17 @@ export class DevolvedExtraParser {
     return undefined;
   }
 
-  async loadExistingBodies(): Promise<any[]> {
+  async loadExistingBodies(): Promise<DevolvedBody[]> {
     try {
       const existing = await this.existingParser.fetchAll();
-      return existing;
+      // Transform DevolvedAdmin to DevolvedBody format
+      return existing.map(admin => ({
+        name: admin.name,
+        nation: admin.administration as DevolvedBody['nation'],
+        bodyType: admin.type === 'department' ? 'department' as const :
+                 admin.type === 'agency' ? 'agency' as const :
+                 'public_body' as const
+      }));
     } catch {
       return [];
     }
@@ -199,14 +214,14 @@ export class DevolvedExtraParser {
       return bodies.filter(body => 
         !existingNames.includes(body.name.toLowerCase())
       );
-    } catch (error) {
+    } catch {
       // If we can't load existing bodies, return all new bodies
       console.log('Could not load existing bodies for deduplication, returning all bodies');
       return bodies;
     }
   }
 
-  mergeRecords(existing: any, newBody: any): any {
+  mergeRecords(existing: DevolvedBody, newBody: DevolvedBody): DevolvedBody {
     return {
       ...existing,
       ...newBody,
@@ -219,8 +234,8 @@ export class DevolvedExtraParser {
    */
   private loadFallbackData(): DevolvedBody[] {
     try {
-      const __dirname = dirname(fileURLToPath(import.meta.url));
-      const fallbackPath = join(__dirname, '..', 'data', 'emergency-services-fallback.json');
+      // Use relative path from project root
+      const fallbackPath = join(process.cwd(), 'src', 'data', 'emergency-services-fallback.json');
       const data = readFileSync(fallbackPath, 'utf-8');
       const parsed = JSON.parse(data);
       return parsed.devolved_extra || [];

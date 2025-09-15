@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import { DataSourceType } from '../models/organisation.js';
 import type { GovUKOrganisation } from '../models/sources.js';
 
-export interface ParseResult<T = any> {
+export interface ParseResult<T = unknown> {
   success: boolean;
   data?: T[];
   errors?: string[];
@@ -25,7 +25,7 @@ export class SimpleParserService {
   /**
    * Parse GOV.UK API JSON response
    */
-  parseGovUkJson(data: string | any): ParseResult<GovUKOrganisation> {
+  parseGovUkJson(data: string | unknown): ParseResult<GovUKOrganisation> {
     try {
       const jsonData = typeof data === 'string' ? JSON.parse(data) : data;
       const organisations = Array.isArray(jsonData) ? jsonData : (jsonData.results || []);
@@ -42,10 +42,11 @@ export class SimpleParserService {
           source: DataSourceType.GOV_UK_API
         }
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
-        errors: [`Failed to parse GOV.UK JSON: ${error.message}`],
+        errors: [`Failed to parse GOV.UK JSON: ${errorMessage}`],
         data: [],
         metadata: {
           totalRecords: 0,
@@ -63,12 +64,12 @@ export class SimpleParserService {
   parseOnsExcel(filePath: string): {
     success: boolean;
     data?: {
-      institutional: any[];
-      nonInstitutional: any[];
+      institutional: Record<string, unknown>[];
+      nonInstitutional: Record<string, unknown>[];
     };
     errors?: string[];
     warnings?: string[];
-    metadata?: any;
+    metadata?: Record<string, unknown>;
   } {
     try {
       if (!fs.existsSync(filePath)) {
@@ -79,7 +80,7 @@ export class SimpleParserService {
       console.log(`ONS Excel has ${workbook.SheetNames.length} sheets`);
       
       // Collect all organizations from relevant sheets
-      const allOrganizations: any[] = [];
+      const allOrganizations: Record<string, unknown>[] = [];
       
       // Sheets that contain organizations
       const orgSheets = [
@@ -97,7 +98,7 @@ export class SimpleParserService {
           }
           
           // Get raw data to find where actual data starts
-          const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as unknown[][];
           
           // Skip header rows (usually first 4-5 rows are metadata)
           let dataStartRow = -1;
@@ -129,7 +130,7 @@ export class SimpleParserService {
             if (row && row[0]) { // Check if first column (Organisation name) exists
               const orgName = row[0];
               if (typeof orgName === 'string' && orgName.trim().length > 0) {
-                const org: any = {
+                const org: Record<string, unknown> = {
                   'Organisation': orgName,
                   '_source_sheet': sheetName
                 };
@@ -167,11 +168,12 @@ export class SimpleParserService {
           source: DataSourceType.ONS_INSTITUTIONAL
         }
       };
-    } catch (error: any) {
-      console.error('Error parsing ONS Excel:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error parsing ONS Excel:', errorMessage);
       return {
         success: false,
-        errors: [`Failed to parse ONS Excel: ${error.message}`],
+        errors: [`Failed to parse ONS Excel: ${errorMessage}`],
         data: {
           institutional: [],
           nonInstitutional: []

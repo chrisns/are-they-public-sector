@@ -62,13 +62,13 @@ describe('Emergency Services Integration', () => {
     // Mock axios for all tests
     jest.spyOn(axios, 'get').mockImplementation(async (url: string) => {
       if (url.includes('police.uk')) {
-        return { data: mockPoliceHTML };
+        return { status: 200, data: mockPoliceHTML };
       }
       if (url.includes('nfcc.org.uk')) {
-        return { data: mockFireHTML };
+        return { status: 200, data: mockFireHTML };
       }
       if (url.includes('gov.uk/guidance')) {
-        return { data: mockDevolvedHTML };
+        return { status: 200, data: mockDevolvedHTML };
       }
       throw new Error('Unknown URL');
     });

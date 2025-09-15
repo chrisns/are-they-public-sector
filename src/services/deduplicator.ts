@@ -259,8 +259,8 @@ export class DeduplicatorService {
     // Check exact match fields
     for (const field of this.config.exactMatchFields) {
       maxScore += 1;
-      const value1 = (org1 as any)[field];
-      const value2 = (org2 as any)[field];
+      const value1 = (org1 as unknown as Record<string, unknown>)[field];
+      const value2 = (org2 as unknown as Record<string, unknown>)[field];
 
       if (value1 && value2 && value1 === value2) {
         totalScore += 1;
@@ -271,11 +271,11 @@ export class DeduplicatorService {
     // Check fuzzy match fields
     for (const field of this.config.fuzzyMatchFields) {
       maxScore += 1;
-      const value1 = (org1 as any)[field];
-      const value2 = (org2 as any)[field];
+      const value1 = (org1 as unknown as Record<string, unknown>)[field];
+      const value2 = (org2 as unknown as Record<string, unknown>)[field];
 
       if (value1 && value2) {
-        const similarity = this.calculateStringSimilarity(value1, value2);
+        const similarity = this.calculateStringSimilarity(value1 as string | string[], value2 as string | string[]);
         if (similarity >= 0.8) {
           totalScore += similarity;
           matchedFields.push(field);
@@ -565,7 +565,7 @@ export class DeduplicatorService {
           // Resolve conflict based on strategy
           const resolvedValue = this.resolveConflict(values, field);
           if (resolvedValue !== undefined) {
-            (merged as any)[field] = resolvedValue;
+            (merged as unknown as Record<string, unknown>)[field as string] = resolvedValue;
           }
         }
       }
@@ -585,7 +585,7 @@ export class DeduplicatorService {
     merged.alternativeNames = [...new Set(allAltNames)];
 
     // Merge additional properties
-    const allAdditionalProps: Record<string, any> = {};
+    const allAdditionalProps: Record<string, unknown> = {};
     for (const org of organisations) {
       if (org.additionalProperties) {
         Object.assign(allAdditionalProps, org.additionalProperties);
@@ -619,7 +619,7 @@ export class DeduplicatorService {
   private selectBaseOrganisation(organisations: Organisation[]): Organisation {
     switch (this.config.conflictResolutionStrategy) {
       case 'newest':
-        return organisations.reduce((newest, org) => 
+        return organisations.reduce((newest, org) =>
           new Date(org.lastUpdated) > new Date(newest.lastUpdated) ? org : newest
         );
 
@@ -631,18 +631,19 @@ export class DeduplicatorService {
         });
 
       case 'most_complete':
-        return organisations.reduce((best, org) => 
+        return organisations.reduce((best, org) =>
           org.dataQuality.completeness > best.dataQuality.completeness ? org : best
         );
 
       case 'manual':
-      default:
+      default: {
         // Default to first organisation for manual resolution
         const firstOrg = organisations[0];
         if (!firstOrg) {
           throw new Error('No organisations to select from');
         }
         return firstOrg;
+      }
     }
   }
 
@@ -653,41 +654,47 @@ export class DeduplicatorService {
    * @returns Resolved value
    */
   private resolveConflict(
-    values: Array<{ org: Organisation; value: any }>,
-    _field: keyof Organisation
-  ): any {
+    values: Array<{ org: Organisation; value: unknown }>,
+    field: keyof Organisation
+  ): unknown {
+    // Field parameter is available for future use in field-specific resolution logic
+    void field;
     switch (this.config.conflictResolutionStrategy) {
-      case 'newest':
-        const newest = values.reduce((latest, item) => 
+      case 'newest': {
+        const newest = values.reduce((latest, item) =>
           new Date(item.org.lastUpdated) > new Date(latest.org.lastUpdated) ? item : latest
         );
         return newest.value;
+      }
 
-      case 'highest_confidence':
+      case 'highest_confidence': {
         const highestConfidence = values.reduce((best, item) => {
           const itemConfidence = Math.max(...item.org.sources.map(s => s.confidence));
           const bestConfidence = Math.max(...best.org.sources.map(s => s.confidence));
           return itemConfidence > bestConfidence ? item : best;
         });
         return highestConfidence.value;
+      }
 
-      case 'most_complete':
+      case 'most_complete': {
         // For string fields, prefer longer values
         const firstValue = values[0];
         if (firstValue && typeof firstValue.value === 'string') {
-          const longest = values.reduce((longest, item) => 
-            item.value.length > longest.value.length ? item : longest
+          const longest = values.reduce((longest, item) =>
+            (typeof item.value === 'string' && item.value.length > (longest.value as string).length) ? item : longest
           );
           return longest.value;
         }
         // For other fields, use first non-null value
         return firstValue?.value;
+      }
 
       case 'manual':
-      default:
+      default: {
         // Default to first value for manual resolution
         const defaultValue = values[0];
         return defaultValue?.value;
+      }
     }
   }
 
@@ -696,10 +703,10 @@ export class DeduplicatorService {
    * @param values Array of values
    * @returns Array of unique values
    */
-  private getUniqueValues(values: any[]): any[] {
-    const seen = new Set();
-    const unique = [];
-    
+  private getUniqueValues(values: unknown[]): unknown[] {
+    const seen = new Set<string>();
+    const unique: unknown[] = [];
+
     for (const value of values) {
       const key = JSON.stringify(value);
       if (!seen.has(key)) {
@@ -707,7 +714,7 @@ export class DeduplicatorService {
         unique.push(value);
       }
     }
-    
+
     return unique;
   }
 
@@ -751,8 +758,8 @@ export class DeduplicatorService {
     ];
 
     const populatedFields = fields.filter(field => {
-      const value = (org as any)[field];
-      return value !== undefined && value !== null && 
+      const value = (org as Record<string, unknown>)[field];
+      return value !== undefined && value !== null &&
              (Array.isArray(value) ? value.length > 0 : value !== '');
     });
 
@@ -787,8 +794,8 @@ export class DeduplicatorService {
     conflicts: DataConflict[]
   ): number {
     // Start with average confidence from sources
-    const sourceConfidences = organisations.flatMap((org: Organisation) => 
-      org.sources.map((s: any) => s.confidence)
+    const sourceConfidences = organisations.flatMap((org: Organisation) =>
+      org.sources.map((s: DataSourceReference) => s.confidence)
     );
     const avgConfidence = sourceConfidences.reduce((sum, c) => sum + c, 0) / sourceConfidences.length;
 

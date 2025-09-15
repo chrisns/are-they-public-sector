@@ -6,8 +6,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import type { FireService, FireParserResponse } from '../models/emergency-services.js';
 
 export interface FireParserOptions {
@@ -42,7 +41,7 @@ export class FireParser {
       });
 
       // If we get a non-200 status, return empty array
-      if (response.status !== 200) {
+      if (response.status && response.status !== 200) {
         console.warn(`Fire services page returned status ${response.status}`);
         return [];
       }
@@ -52,14 +51,24 @@ export class FireParser {
       // If we didn't get enough services, use fallback data
       if (services.length < 45) {
         console.warn(`Only got ${services.length} fire services from live data, using fallback`);
-        return this.loadFallbackData();
+        const fallback = this.loadFallbackData();
+        if (fallback.length > 0) {
+          return fallback;
+        }
+        console.warn('No fallback data available, returning live data');
       }
 
       console.log(`Fetched ${services.length} fire services`);
       return services;
     } catch (error) {
       console.error('Failed to fetch fire services:', error);
-      throw new Error(`Failed to fetch fire services: ${error instanceof Error ? error.message : String(error)}`);
+      const fallback = this.loadFallbackData();
+      if (fallback.length > 0) {
+        console.log(`Using fallback data (${fallback.length} services)`);
+        return fallback;
+      }
+      console.warn('No fallback data available, returning empty array');
+      return [];
     }
   }
 
@@ -133,7 +142,7 @@ export class FireParser {
   /**
    * Extract service data from HTML element
    */
-  private extractServiceFromElement($: cheerio.CheerioAPI, element: any): FireService | null {
+  private extractServiceFromElement($: cheerio.CheerioAPI, element: cheerio.AnyNode): FireService | null {
     const $el = $(element);
     const text = $el.text();
     
@@ -240,7 +249,7 @@ export class FireParser {
    */
   private extractRegion(name: string): string {
     // Remove fire service suffixes
-    let region = name
+    const region = name
       .replace(/Fire and Rescue Service/gi, '')
       .replace(/Fire and Rescue Authority/gi, '')
       .replace(/Fire Service/gi, '')
@@ -286,8 +295,7 @@ export class FireParser {
    */
   private loadFallbackData(): FireService[] {
     try {
-      const __dirname = dirname(fileURLToPath(import.meta.url));
-      const fallbackPath = join(__dirname, '..', 'data', 'emergency-services-fallback.json');
+      const fallbackPath = join(process.cwd(), 'src', 'data', 'emergency-services-fallback.json');
       const data = readFileSync(fallbackPath, 'utf-8');
       const parsed = JSON.parse(data);
       return parsed.fire || [];

@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { OrganisationType } from '../models/organisation.js';
-import type { Organisation } from '../models/organisation.js';
+import type { Organisation, DataSourceReference } from '../models/organisation.js';
 import type { ProcessingResult, ProcessingMetadata, DataConflict } from '../models/processing.js';
 
 /**
@@ -143,7 +143,7 @@ export class WriterService {
    * @param filePath Path to write to
    * @param data Data to write
    */
-  private async writeJsonFile(filePath: string, data: any): Promise<void> {
+  private async writeJsonFile(filePath: string, data: OutputData | OutputSummary | { conflicts: DataConflict[]; count: number; generated: string }): Promise<void> {
     // Ensure directory exists
     const dir = path.dirname(filePath);
     if (!fs.existsSync(dir)) {
@@ -211,7 +211,7 @@ export class WriterService {
     // Count by source
     const sources: Record<string, number> = {};
     organisations.forEach((org: Organisation) => {
-      org.sources.forEach((source: any) => {
+      org.sources.forEach((source: DataSourceReference) => {
         sources[source.source] = (sources[source.source] || 0) + 1;
       });
     });
@@ -353,7 +353,7 @@ export class WriterService {
         this.escapeCsvValue(org.location?.address || ''),
         org.dataQuality.completeness.toFixed(2),
         org.dataQuality.requiresReview ? 'Yes' : 'No',
-        org.sources.map((s: any) => s.source).join(';'),
+        org.sources.map((s: DataSourceReference) => s.source).join(';'),
         org.lastUpdated
       ];
 

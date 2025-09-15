@@ -4,22 +4,34 @@
 
 import type { Organisation } from '../models/organisation.js';
 import { OrganisationType, DataSourceType } from '../models/organisation.js';
+import type { GovUKOrganisation, ONSInstitutionalUnit } from '../models/sources.js';
+
+/**
+ * Raw ONS data can come in different formats after processing
+ */
+interface ProcessedONSData extends Partial<ONSInstitutionalUnit> {
+  _source_sheet?: string;
+  Organisation?: string;
+  Name?: string;
+  name?: string;
+  [key: string]: unknown;
+}
 
 export class SimpleMapperService {
   /**
    * Map GOV.UK organisation to standard format
    */
-  mapGovUkOrganisation(source: any): { success: boolean; data?: Organisation } {
+  mapGovUkOrganisation(source: GovUKOrganisation): { success: boolean; data?: Organisation } {
     try {
       const org: Organisation = {
-        id: source.slug || source.id || `govuk-${Date.now()}`,
-        name: source.title || source.name || 'Unknown',
-        type: this.mapGovUkType(source.format || source.type),
-        classification: source.type || source.format || 'Unknown',
+        id: source.slug || source.content_id || `govuk-${Date.now()}`,
+        name: source.title || 'Unknown',
+        type: this.mapGovUkType(source.format || source.details?.type || source.document_type),
+        classification: source.format || source.details?.type || source.document_type || 'Unknown',
         status: source.withdrawn ? 'dissolved' : 'active',
         sources: [{
           source: DataSourceType.GOV_UK_API,
-          sourceId: source.slug,
+          sourceId: source.content_id,
           retrievedAt: new Date().toISOString(),
           confidence: 1.0
         }],
@@ -30,8 +42,9 @@ export class SimpleMapperService {
           requiresReview: false
         },
         additionalProperties: {
-          web_url: source.web_url,
-          details: source.details
+          base_path: source.base_path,
+          details: source.details,
+          description: source.description
         }
       };
       
@@ -45,7 +58,7 @@ export class SimpleMapperService {
   /**
    * Map ONS organisation to standard format
    */
-  mapOnsOrganisation(source: any): { success: boolean; data?: Organisation } {
+  mapOnsOrganisation(source: ProcessedONSData): { success: boolean; data?: Organisation } {
     try {
       // Extract name - now in 'Organisation' field
       const name = source['Organisation'] || 
@@ -57,7 +70,7 @@ export class SimpleMapperService {
       const org: Organisation = {
         id: source['ONS code'] || `ons-${Date.now()}-${Math.random()}`,
         name: name,
-        type: this.mapOnsType(source._source_sheet || source.Classification),
+        type: this.mapOnsType(source._source_sheet || source.Classification || 'Unknown'),
         classification: source.Classification || source._source_sheet || 'Unknown',
         status: 'active',
         parentOrganisation: source['Parent organisation'],
@@ -85,7 +98,7 @@ export class SimpleMapperService {
     }
   }
 
-  private mapGovUkType(format: string): OrganisationType {
+  private mapGovUkType(format: string | undefined): OrganisationType {
     const lower = (format || '').toLowerCase();
     if (lower.includes('ministerial')) return OrganisationType.MINISTERIAL_DEPARTMENT;
     if (lower.includes('executive')) return OrganisationType.EXECUTIVE_AGENCY;
@@ -94,7 +107,7 @@ export class SimpleMapperService {
     return OrganisationType.OTHER;
   }
 
-  private mapOnsType(sheet: string): OrganisationType {
+  private mapOnsType(sheet: string | undefined): OrganisationType {
     const lower = (sheet || '').toLowerCase();
     if (lower.includes('central')) return OrganisationType.MINISTERIAL_DEPARTMENT;
     if (lower.includes('local')) return OrganisationType.OTHER;
