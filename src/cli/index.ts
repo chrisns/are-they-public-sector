@@ -186,25 +186,26 @@ async function runAggregation(options: CliOptions): Promise<void> {
     if (!options.quiet) {
       logger.section('Aggregation Complete');
       const totalRecords = result.metadata?.statistics?.totalOrganisations || result.organisations.length;
-      logger.success(`✓ Successfully aggregated ${totalRecords} organisations`);
+
+      // Check if we have partial failures
+      const hasFailures = result.partialFailures && result.partialFailures.length > 0;
+
+      if (hasFailures) {
+        logger.error(`✗ Aggregation completed with failures`);
+        logger.error(`  • ${result.partialFailures!.length} source(s) failed to fetch data`);
+      } else {
+        logger.success(`✓ Successfully aggregated ${totalRecords} organisations`);
+      }
+
       logger.info('Summary:');
       logger.info(`  • Output: ${outputPath}`);
+      logger.info(`  • Records collected: ${totalRecords}`);
       logger.info(`  • Sources: ${result.metadata?.sources?.length || 3} sources`);
       logger.info(`  • Duplicates merged: ${result.metadata?.statistics?.duplicatesFound || 0}`);
       logger.info(`  • Processing time: ${duration.toFixed(2)}s`);
 
       if (options.cache) {
         logger.info(`  • Cache: Enabled (use --cache to reuse)`);
-      }
-
-      // Report partial failures if any
-      if (result.partialFailures && result.partialFailures.length > 0) {
-        logger.warn(`  • WARNING: ${result.partialFailures.length} source(s) failed`);
-        if (options.debug) {
-          result.partialFailures.forEach(err => {
-            logger.debug(`    - ${err.message}`);
-          });
-        }
       }
     }
 

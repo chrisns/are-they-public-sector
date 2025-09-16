@@ -140,61 +140,41 @@ export class FetcherService {
       
       const html = response.data;
       
-      // Look for the specific link text "Public sector classification guide" as per spec
-      // The link pattern is typically: <a href="/file?uri=/methodology/.../pscgaug2025.xlsx">Public sector classification guide</a>
-      const linkPattern = /<a[^>]*href="([^"]*)"[^>]*>([^<]*Public\s+sector\s+classification\s+guide[^<]*)<\/a>/gi;
+      // Look for any Excel file containing "publicsectorclassificationguide" in the path
+      // The ONS page structure has changed over time, so we need to be flexible
+      const linkPattern = /<a[^>]*href="([^"]*publicsectorclassificationguide[^"]*\.(xls|xlsx))"[^>]*>/gi;
       const matches = [...html.matchAll(linkPattern)];
-      
+
       if (matches.length > 0) {
-        // Get the href from the first match
+        // Get the href from the first match (most recent)
         let excelUrl = matches[0][1];
-        
+
         // Make URL absolute if it's relative
         if (!excelUrl.startsWith('http')) {
           const baseUrl = new URL(url);
           excelUrl = new URL(excelUrl, baseUrl.origin).toString();
         }
-        
+
         console.log('Found ONS Excel link:', excelUrl);
         return excelUrl;
       }
-      
-      // Fallback: look for any Excel file links containing "classification" or "pscg"
-      const xlsxPattern = /href="([^"]*(?:classification|pscg)[^"]*\.xlsx?)"/gi;
-      const xlsxMatches = [...html.matchAll(xlsxPattern)];
-      
-      if (xlsxMatches.length > 0) {
-        let excelUrl = xlsxMatches[0][1];
-        
-        // Make URL absolute if it's relative
+
+      // If no direct match, look for any download button with classification guide
+      const btnPattern = /<a[^>]*class="[^"]*btn[^"]*"[^>]*href="([^"]*)"[^>]*aria-label="[^"]*classification guide[^"]*"[^>]*>/gi;
+      const btnMatches = [...html.matchAll(btnPattern)];
+
+      if (btnMatches.length > 0) {
+        let excelUrl = btnMatches[0][1];
         if (!excelUrl.startsWith('http')) {
           const baseUrl = new URL(url);
           excelUrl = new URL(excelUrl, baseUrl.origin).toString();
         }
-        
-        console.log('Found ONS Excel link (fallback):', excelUrl);
+        console.log('Found ONS Excel link from button:', excelUrl);
         return excelUrl;
       }
-      
-      // Second fallback: look for any Excel file links
-      const anyXlsxPattern = /href="([^"]*\.xlsx?)"/gi;
-      const anyMatches = [...html.matchAll(anyXlsxPattern)];
-      
-      if (anyMatches.length > 0) {
-        // Get the most recent file (usually the first one)
-        let excelUrl = anyMatches[0][1];
-        
-        // Make URL absolute if it's relative
-        if (!excelUrl.startsWith('http')) {
-          const baseUrl = new URL(url);
-          excelUrl = new URL(excelUrl, baseUrl.origin).toString();
-        }
-        
-        console.log('Found ONS Excel link (any xlsx):', excelUrl);
-        return excelUrl;
-      }
-      
-      return null;
+
+      // No patterns found - throw error
+      throw new Error('Could not find any Public Sector Classification Guide Excel file on ONS page');
     } catch (error) {
       console.error('Error scraping ONS page:', this.formatError(error));
       return null;

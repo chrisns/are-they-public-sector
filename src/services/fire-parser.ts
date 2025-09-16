@@ -5,8 +5,6 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type { FireService, FireParserResponse } from '../models/emergency-services.js';
 
 export interface FireParserOptions {
@@ -40,35 +38,29 @@ export class FireParser {
         validateStatus: (status) => status < 500
       });
 
-      // If we get a non-200 status, return empty array
+      // If we get a 403 status, throw error with helpful message
+      if (response.status === 403) {
+        throw new Error(`Fire services page returned 403 (Forbidden) - may be rate limited or blocked by NFCC website`);
+      }
+
+      // If we get other non-200 status, throw error
       if (response.status && response.status !== 200) {
-        console.warn(`Fire services page returned status ${response.status}`);
-        return [];
+        throw new Error(`Fire services page returned status ${response.status}`);
       }
 
       const services = this.parseHTML(response.data);
-      
-      // If we didn't get enough services, use fallback data
-      if (services.length < 45) {
-        console.warn(`Only got ${services.length} fire services from live data, using fallback`);
-        const fallback = this.loadFallbackData();
-        if (fallback.length > 0) {
-          return fallback;
-        }
-        console.warn('No fallback data available, returning live data');
+
+      // If we didn't get any services at all, throw error
+      // Lower threshold to handle cases where APIs return 403 errors
+      if (services.length === 0) {
+        throw new Error(`No fire services found - data source may be unavailable`);
       }
 
       console.log(`Fetched ${services.length} fire services`);
       return services;
     } catch (error) {
       console.error('Failed to fetch fire services:', error);
-      const fallback = this.loadFallbackData();
-      if (fallback.length > 0) {
-        console.log(`Using fallback data (${fallback.length} services)`);
-        return fallback;
-      }
-      console.warn('No fallback data available, returning empty array');
-      return [];
+      throw error;
     }
   }
 
@@ -290,20 +282,6 @@ export class FireParser {
     }
   }
 
-  /**
-   * Load fallback data when live fetching fails
-   */
-  private loadFallbackData(): FireService[] {
-    try {
-      const fallbackPath = join(process.cwd(), 'src', 'data', 'emergency-services-fallback.json');
-      const data = readFileSync(fallbackPath, 'utf-8');
-      const parsed = JSON.parse(data);
-      return parsed.fire || [];
-    } catch (error) {
-      console.error('Failed to load fallback data:', error);
-      return [];
-    }
-  }
 
   /**
    * Aggregate with metadata

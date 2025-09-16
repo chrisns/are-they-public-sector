@@ -83,5 +83,15 @@ temp/
 # rollup.js default build output
 dist/
 data
+
+# Cleanup - prevent caching and test files in root
+data/
+test/
+.cache/
+src/data/
+test*.js
+test*.ts
+!tests/**
+
 # Uncomment the public line in if the project builds a library that exports TypeScript definitions
 # public/

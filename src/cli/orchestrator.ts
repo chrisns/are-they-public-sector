@@ -855,9 +855,6 @@ export class Orchestrator {
       const scottishCourts = scottishParser.mapToCourtModel(scottishRaw);
       const scottishOrgs = mapper.mapMany(scottishCourts);
       allCourts.push(...scottishOrgs);
-      if (scottishParser.getLastError()) {
-        this.logger.warn('Used fallback data for Scottish courts');
-      }
       this.logger.stopProgress(`Fetched ${scottishOrgs.length} Scottish courts`);
     } catch (error) {
       this.logger.error(`Failed to fetch Scottish courts: ${error}`);
@@ -1169,7 +1166,7 @@ export class Orchestrator {
                 source.includes('institutional') ? DataSourceType.ONS_INSTITUTIONAL :
                 DataSourceType.ONS_NON_INSTITUTIONAL,
         recordCount: dedupResult.organisations.filter((org: Organisation) =>
-          org.sources.some((s: DataSourceReference) => s.source.toString() === source.replace('-units', '').replace('.uk-api', '_uk_api').replace('-', '_'))
+          org.sources && org.sources.some((s: DataSourceReference) => s.source.toString() === source.replace('-units', '').replace('.uk-api', '_uk_api').replace('-', '_'))
         ).length,
         retrievedAt: new Date().toISOString()
       }));
@@ -1210,20 +1207,28 @@ export class Orchestrator {
 
       // Log errors if any
       if (errors.length > 0) {
-        const failedSources = errors.map(err => {
+        const failedSourceDetails = errors.map(err => {
           // Extract source name from error message if possible
-          const match = err.message.match(/(.+) fetch failed/);
+          const match = err.message.match(/Failed to fetch (.+) data/);
           if (match) return match[1];
-          // Try to extract from error string
-          return err.message.split(' ').slice(0, 2).join(' ');
-        }).join(', ');
+          // Try other patterns
+          if (err.message.includes('police')) return 'Police Forces';
+          if (err.message.includes('fire')) return 'Fire Services';
+          if (err.message.includes('devolved')) return 'Devolved Administrations';
+          if (err.message.includes('colleges')) return 'Colleges';
+          if (err.message.includes('Scottish')) return 'Scottish Courts';
+          // Fallback
+          return err.message.split(':')[0].trim();
+        });
 
-        this.logger.warn(`${errors.length} source(s) failed during aggregation: ${failedSources}`);
-        this.logger.debug('Detailed errors:', errors.map(e => e.message));
+        this.logger.error(`CRITICAL: ${errors.length} data source(s) failed:`);
+        failedSourceDetails.forEach((source, i) => {
+          this.logger.error(`  • ${source}: ${errors[i].message}`);
+        });
       }
 
       return {
-        success: hasData,  // Success if we have any data, regardless of individual source failures
+        success: hasData && errors.length === 0,  // Only succeed if we have data AND no errors
         sources,
         organisations: dedupResult.organisations,
         totalRecords: dedupResult.organisations.length,
@@ -1232,7 +1237,8 @@ export class Orchestrator {
           memoryUsed: process.memoryUsage().heapUsed,
           peakMemoryMB: this.peakMemory
         },
-        ...(errors.length > 0 && { partialFailures: errors })  // Include errors for visibility but don't fail
+        ...(errors.length > 0 && { partialFailures: errors }),
+        failureCount: errors.length
       };
     } catch (error) {
       this.logger.error('Aggregation failed', error);

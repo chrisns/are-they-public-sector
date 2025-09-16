@@ -1,6 +1,6 @@
 /**
  * Contract Test: Police Forces Parser
- * Validates police-parser service behavior and output format
+ * Validates police-parser service behavior and output format using data.police.uk API
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
@@ -16,65 +16,78 @@ describe('Police Parser Contract', () => {
   });
 
   describe('fetchAll()', () => {
-    it('should return array of PoliceForce objects from UK forces page', async () => {
-      // GIVEN: Police UK forces page is available
-      const ukForces = [
-        'Metropolitan Police Service', 'West Midlands Police', 'Greater Manchester Police',
-        'West Yorkshire Police', 'Merseyside Police', 'South Yorkshire Police',
-        'Northumbria Police', 'Hampshire Constabulary', 'Thames Valley Police',
-        'Essex Police', 'Kent Police', 'Devon and Cornwall Police',
-        'Avon and Somerset Constabulary', 'Lancashire Constabulary', 'West Mercia Police',
-        'Sussex Police', 'Leicestershire Police', 'Staffordshire Police',
-        'Norfolk Constabulary', 'Suffolk Constabulary', 'Cambridgeshire Constabulary',
-        'Dorset Police', 'Wiltshire Police', 'Lincolnshire Police',
-        'Gloucestershire Constabulary', 'Nottinghamshire Police', 'Derbyshire Constabulary',
-        'North Yorkshire Police', 'Humberside Police', 'Cleveland Police',
-        'Durham Constabulary', 'Cheshire Constabulary', 'Cumbria Constabulary',
-        'North Wales Police', 'South Wales Police', 'Gwent Police', 'Dyfed-Powys Police',
-        'Police Scotland', 'Police Service of Northern Ireland',
-        'British Transport Police', 'Civil Nuclear Constabulary', 'Ministry of Defence Police'
+    it('should return array of PoliceForce objects from data.police.uk API', async () => {
+      // GIVEN: data.police.uk API is available
+      const mockForcesResponse = [
+        { id: 'metropolitan', name: 'Metropolitan Police Service' },
+        { id: 'west-midlands', name: 'West Midlands Police' },
+        { id: 'greater-manchester', name: 'Greater Manchester Police' },
+        { id: 'west-yorkshire', name: 'West Yorkshire Police' },
+        { id: 'merseyside', name: 'Merseyside Police' }
       ];
-      
-      const mockUKHTML = `
-        <div class="police-forces-list">
-          ${ukForces.map(force => `<a href="/force/${force.toLowerCase().replace(/ /g, '-')}">${force}</a>`).join('\n')}
-        </div>
-      `;
-      const mockNonUKHTML = `
-        <div class="police-forces">
-          <a href="/force/jersey">States of Jersey Police</a>
-          <a href="/force/guernsey">Guernsey Police</a>
-          <a href="/force/isle-of-man">Isle of Man Constabulary</a>
-        </div>
-      `;
-      
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockImplementation((url) => {
-        if (url.includes('uk-police-forces')) {
-          return Promise.resolve({ data: mockUKHTML });
-        } else {
-          return Promise.resolve({ data: mockNonUKHTML });
+
+      const mockForceDetails = {
+        'metropolitan': {
+          id: 'metropolitan',
+          name: 'Metropolitan Police Service',
+          url: 'https://www.met.police.uk/',
+          telephone: '101'
+        },
+        'west-midlands': {
+          id: 'west-midlands',
+          name: 'West Midlands Police',
+          url: 'https://www.west-midlands.police.uk/',
+          telephone: '101'
+        },
+        'greater-manchester': {
+          id: 'greater-manchester',
+          name: 'Greater Manchester Police',
+          url: 'https://www.gmp.police.uk/',
+          telephone: '101'
+        },
+        'west-yorkshire': {
+          id: 'west-yorkshire',
+          name: 'West Yorkshire Police',
+          url: 'https://www.westyorkshire.police.uk/',
+          telephone: '101'
+        },
+        'merseyside': {
+          id: 'merseyside',
+          name: 'Merseyside Police',
+          url: 'https://www.merseyside.police.uk/',
+          telephone: '101'
         }
+      };
+
+      (axios.get as jest.MockedFunction<typeof axios.get>).mockImplementation((url) => {
+        if (url === 'https://data.police.uk/api/forces') {
+          return Promise.resolve({ data: mockForcesResponse });
+        } else if (url.includes('/api/forces/')) {
+          const forceId = url.split('/').pop();
+          return Promise.resolve({ data: mockForceDetails[forceId as keyof typeof mockForceDetails] });
+        }
+        return Promise.reject(new Error('Unexpected URL'));
       });
-      
+
       const parser = new PoliceParser();
-      
+
       // WHEN: Fetching all UK police forces
       const forces = await parser.fetchAll();
-      
+
       // THEN: Should return valid police force data
       expect(Array.isArray(forces)).toBe(true);
-      expect(forces.length).toBeGreaterThanOrEqual(40); // Minimum expected
-      
+      expect(forces.length).toBe(5);
+
       forces.forEach(force => {
         expect(force).toMatchObject({
           name: expect.any(String),
           serviceType: 'police',
           forceType: expect.stringMatching(/^(territorial|special|crown_dependency|overseas_territory)$/)
         });
-        
+
         // Name should not be empty
         expect(force.name.length).toBeGreaterThan(0);
-        
+
         // Territorial forces should have jurisdiction
         if (force.forceType === 'territorial') {
           expect(force.jurisdiction).toBeDefined();
@@ -83,144 +96,92 @@ describe('Police Parser Contract', () => {
       });
     });
 
-    it('should include both UK and non-UK police forces', async () => {
-      // GIVEN: Both UK and non-UK pages are available  
-      // Mock already set up in previous test
+    it('should classify force types correctly', async () => {
+      // GIVEN: API responses set up in first test
       const parser = new PoliceParser();
-      
+
       // WHEN: Fetching all forces
       const forces = await parser.fetchAll();
-      
-      // THEN: Should include various force types
+
+      // THEN: Should classify forces as territorial (data.police.uk only has territorial forces)
       const forceTypes = new Set(forces.map(f => f.forceType));
       expect(forceTypes.has('territorial')).toBe(true);
-      
+
       // Check for specific known forces
       const forceNames = forces.map(f => f.name.toLowerCase());
       const hasMetropolitan = forceNames.some(n => n.includes('metropolitan'));
-      const hasTransport = forceNames.some(n => n.includes('british transport'));
       expect(hasMetropolitan).toBe(true);
-      expect(hasTransport).toBe(true);
     });
 
-    it('should handle Crown Dependencies correctly', async () => {
-      // GIVEN: Non-UK page includes Crown Dependencies
-      // Mock already set up in first test
+    it('should handle API response with website URLs', async () => {
+      // GIVEN: API responses include website URLs
       const parser = new PoliceParser();
-      
+
       // WHEN: Fetching all forces
       const forces = await parser.fetchAll();
-      
-      // THEN: Crown Dependencies should be classified correctly
-      const crownDeps = forces.filter(f => f.forceType === 'crown_dependency');
-      const crownNames = crownDeps.map(f => f.name.toLowerCase());
-      
-      // Should include Jersey, Guernsey, Isle of Man if present
-      ['jersey', 'guernsey', 'isle of man'].forEach(dep => {
-        const hasDep = crownNames.some(name => name.includes(dep));
-        if (hasDep) {
-          expect(hasDep).toBe(true);
-        }
+
+      // THEN: Forces should include website URLs where available
+      const forcesWithWebsites = forces.filter(f => f.website);
+      expect(forcesWithWebsites.length).toBeGreaterThan(0);
+
+      // Website URLs should be valid
+      forcesWithWebsites.forEach(force => {
+        expect(force.website).toMatch(/^https?:\/\//);
       });
     });
   });
 
-  describe('parseHTML()', () => {
-    it('should extract police force data from HTML', () => {
-      // GIVEN: Sample HTML structure
-      const html = `
-        <div class="police-forces">
-          <h2>England</h2>
-          <ul>
-            <li><a href="/force/met">Metropolitan Police Service</a></li>
-            <li><a href="/force/gmp">Greater Manchester Police</a></li>
-          </ul>
-          <h2>Special Forces</h2>
-          <ul>
-            <li><a href="/force/btp">British Transport Police</a></li>
-          </ul>
-        </div>
-      `;
-      
-      // WHEN: Parsing the HTML
-      const parser = new PoliceParser();
-      const forces = parser.parseHTML(html, 'https://police.uk');
-      
-      // THEN: Should extract force information
-      expect(forces).toHaveLength(3);
-      expect(forces[0]).toMatchObject({
-        name: 'Metropolitan Police Service',
-        serviceType: 'police',
-        forceType: 'territorial',
-        website: expect.stringContaining('police.uk')
-      });
-      expect(forces[2].forceType).toBe('special');
-    });
-
-    it('should fail fast on unexpected HTML structure', () => {
-      // GIVEN: HTML with missing expected elements
-      const html = '<div>Unexpected content</div>';
-      
-      // WHEN: Parsing invalid HTML
-      const parser = new PoliceParser();
-      
-      // THEN: Should throw error
-      expect(() => parser.parseHTML(html, 'https://police.uk'))
-        .toThrow(/HTML structure changed/);
-    });
-  });
 
   describe('Data Quality', () => {
-    it('should normalize police force names', async () => {
-      // GIVEN: Forces with various naming patterns
-      // Mock already set up
+    it('should have clean police force names from API', async () => {
+      // GIVEN: API responses set up in first test
       const parser = new PoliceParser();
-      
+
       // WHEN: Fetching forces
       const forces = await parser.fetchAll();
-      
+
       // THEN: Names should be properly formatted
       forces.forEach(force => {
         // No leading/trailing whitespace
         expect(force.name).toBe(force.name.trim());
-        
+
         // No double spaces
         expect(force.name).not.toMatch(/\s{2,}/);
-        
-        // Proper capitalization (first letter of each word)
-        const words = force.name.split(' ');
-        words.forEach(word => {
-          if (word.length > 2 && !['and', 'of'].includes(word.toLowerCase())) {
-            expect(word[0]).toBe(word[0].toUpperCase());
-          }
-        });
+
+        // Should have meaningful content
+        expect(force.name.length).toBeGreaterThan(3);
       });
     });
 
-    it('should handle missing optional fields gracefully', () => {
-      // GIVEN: HTML with minimal information but enough content
-      const html = `
-        <div class="content">
-          <h1>UK Police Forces</h1>
-          <p>Here are the police forces in the UK. This page contains information about various police forces operating across England, Wales, Scotland and Northern Ireland.</p>
-          <ul class="forces">
-            <li>West Midlands Police</li>
-            <li>Merseyside Police</li>
-          </ul>
-        </div>
-      `;
-      
-      // WHEN: Parsing minimal HTML
-      const parser = new PoliceParser();
-      const forces = parser.parseHTML(html, 'https://police.uk');
-      
-      // THEN: Should still create valid objects
-      expect(forces).toHaveLength(2);
-      forces.forEach(force => {
-        expect(force.name).toBeDefined();
-        expect(force.serviceType).toBe('police');
-        // website is optional and may or may not be present
+    it('should handle missing optional fields gracefully', async () => {
+      // GIVEN: API response with minimal data
+      const mockMinimalResponse = [{ id: 'test-force', name: 'Test Police' }];
+      const mockMinimalDetail = { id: 'test-force', name: 'Test Police' }; // No URL or telephone
+
+      (axios.get as jest.MockedFunction<typeof axios.get>).mockImplementation((url) => {
+        if (url === 'https://data.police.uk/api/forces') {
+          return Promise.resolve({ data: mockMinimalResponse });
+        } else if (url.includes('/api/forces/test-force')) {
+          return Promise.resolve({ data: mockMinimalDetail });
+        }
+        return Promise.reject(new Error('Unexpected URL'));
       });
+
+      const parser = new PoliceParser();
+
+      // WHEN: Fetching forces with minimal data
+      const forces = await parser.fetchAll();
+
+      // THEN: Should still create valid objects
+      expect(forces).toHaveLength(1);
+      expect(forces[0]).toMatchObject({
+        name: 'Test Police',
+        serviceType: 'police',
+        forceType: 'territorial',
+        jurisdiction: 'Test'
+      });
+      // website is optional and should not be present
+      expect(forces[0].website).toBeUndefined();
     });
   });
 
@@ -231,25 +192,43 @@ describe('Police Parser Contract', () => {
       const parser = new PoliceParser();
 
       // WHEN: Attempting to fetch
-      // THEN: Should return fallback data or empty array (not throw)
-      const forces = await parser.fetchAll();
-      expect(Array.isArray(forces)).toBe(true);
-      // Either returns fallback data or empty array if no fallback
-      expect(forces.length).toBeGreaterThanOrEqual(0);
+      // THEN: Should throw error (no fallback for API-based approach)
+      await expect(parser.fetchAll()).rejects.toThrow('Network error');
     });
 
-    it('should use fallback when live data is insufficient', async () => {
-      // GIVEN: Parser returns too few records from live data
-      const mockEmptyHTML = '<div class="police-forces-list"></div>';
-      (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValue({ status: 200, data: mockEmptyHTML });
+    it('should handle empty API response', async () => {
+      // GIVEN: API returns empty array
+      (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValue({ data: [] });
       const parser = new PoliceParser();
 
       // WHEN: Fetching forces
-      // THEN: Should use fallback data or return empty array (not throw)
+      // THEN: Should throw appropriate error
+      await expect(parser.fetchAll()).rejects.toThrow('No police forces found in API response');
+    });
+
+    it('should handle individual force detail fetch failures', async () => {
+      // GIVEN: Main API works but individual force details fail
+      const mockResponse = [{ id: 'test-force', name: 'Test Police' }];
+
+      (axios.get as jest.MockedFunction<typeof axios.get>).mockImplementation((url) => {
+        if (url === 'https://data.police.uk/api/forces') {
+          return Promise.resolve({ data: mockResponse });
+        } else {
+          return Promise.reject(new Error('Detail fetch failed'));
+        }
+      });
+
+      const parser = new PoliceParser();
+
+      // WHEN: Fetching forces
       const forces = await parser.fetchAll();
-      expect(Array.isArray(forces)).toBe(true);
-      // Either returns fallback data or empty array if no fallback
-      expect(forces.length).toBeGreaterThanOrEqual(0);
+
+      // THEN: Should still return force with basic info
+      expect(forces).toHaveLength(1);
+      expect(forces[0]).toMatchObject({
+        name: 'Test Police',
+        serviceType: 'police'
+      });
     });
   });
 });

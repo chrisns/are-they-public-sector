@@ -5,8 +5,6 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import type { DevolvedBody, DevolvedParserResponse } from '../models/emergency-services.js';
 import { DevolvedAdminParser } from './devolved-admin-parser.js';
 
@@ -40,44 +38,30 @@ export class DevolvedExtraParser {
         validateStatus: (status) => status < 500
       });
 
-      // If we get a non-200 status, return empty array
+      // If we get a non-200 status, throw error
       if (response.status && response.status !== 200) {
-        console.warn(`Devolved bodies page returned status ${response.status}`);
-        return [];
+        throw new Error(`Devolved bodies page returned status ${response.status}`);
       }
 
       const bodies = this.parseHTML(response.data);
-      
-      // Check minimum before deduplication for better error messages
+
+      // If we couldn't parse any bodies, throw error
       if (bodies.length === 0) {
-        console.warn('Unable to parse devolved bodies from HTML, using fallback');
-        const fallback = this.loadFallbackData();
-        return await this.deduplicateAgainstExisting(fallback);
+        throw new Error('Unable to parse devolved bodies from HTML - no data found');
       }
-      
+
       const deduplicated = await this.deduplicateAgainstExisting(bodies);
-      
-      // If we didn't get enough bodies, use fallback data
-      if (deduplicated.length < 10) {
-        console.warn(`Only got ${deduplicated.length} devolved bodies from live data, using fallback`);
-        const fallback = this.loadFallbackData();
-        if (fallback.length > 0) {
-          return await this.deduplicateAgainstExisting(fallback);
-        }
-        console.warn('No fallback data available, returning live data');
+
+      // If we didn't get a reasonable number of bodies after deduplication, throw error
+      if (deduplicated.length < 5) {
+        throw new Error(`Only got ${deduplicated.length} devolved bodies after deduplication - this seems too low`);
       }
 
       console.log(`Fetched ${deduplicated.length} new devolved bodies`);
       return deduplicated;
     } catch (error) {
       console.error('Failed to fetch devolved bodies:', error);
-      const fallback = this.loadFallbackData();
-      if (fallback.length > 0) {
-        console.log(`Using fallback data (${fallback.length} bodies)`);
-        return await this.deduplicateAgainstExisting(fallback);
-      }
-      console.warn('No fallback data available, returning empty array');
-      return [];
+      throw error;
     }
   }
 
@@ -229,21 +213,6 @@ export class DevolvedExtraParser {
     };
   }
 
-  /**
-   * Load fallback data when live fetching fails
-   */
-  private loadFallbackData(): DevolvedBody[] {
-    try {
-      // Use relative path from project root
-      const fallbackPath = join(process.cwd(), 'src', 'data', 'emergency-services-fallback.json');
-      const data = readFileSync(fallbackPath, 'utf-8');
-      const parsed = JSON.parse(data);
-      return parsed.devolved_extra || [];
-    } catch (error) {
-      console.error('Failed to load fallback data:', error);
-      return [];
-    }
-  }
 
   async aggregate(): Promise<DevolvedParserResponse> {
     const allBodies = await this.fetchAll();
