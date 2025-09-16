@@ -41,33 +41,33 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding UK Courts and Tribunals data:
-- English/Welsh Courts: CSV from factprod.blob.core.windows.net
-- NI Courts: HTML parsing from nidirect.gov.uk
-- Scottish Courts: API/network requests or fallback data
-- New parsers: english-courts-parser.ts, ni-courts-parser.ts, scottish-courts-parser.ts
-- No deduplication between sources, extract all available courts
+Adding Groundwork Trusts and NHS Charities data:
+- Groundwork Trusts: HTML scraping from dropdown at groundwork.org.uk/find-groundwork-near-me
+- NHS Charities: API discovery from nhscharitiestogether.co.uk then fetch JSON
+- New parsers: groundwork-parser.ts, nhs-charities-parser.ts
+- Both classified as Central Government (S.1311)
+- No deduplication between sources, minimum viable data is name only
 
 ## Key Files
-- `specs/009-english-courts-can/spec.md` - UK Courts feature specification
-- `specs/009-english-courts-can/plan.md` - Implementation plan
-- `specs/009-english-courts-can/contracts/` - Parser contracts
-- `src/services/english-courts-parser.ts` - English Courts CSV parser (NEW)
-- `src/services/ni-courts-parser.ts` - NI Courts HTML parser (NEW)
-- `src/services/scottish-courts-parser.ts` - Scottish Courts parser (NEW)
-- `src/services/mappers/courts-mapper.ts` - Maps to Organisation (NEW)
+- `specs/010-you-can-discover/spec.md` - Groundwork/NHS Charities feature specification
+- `specs/010-you-can-discover/plan.md` - Implementation plan
+- `specs/010-you-can-discover/contracts/` - Parser contracts
+- `src/services/groundwork-parser.ts` - Groundwork Trusts HTML parser (NEW)
+- `src/services/nhs-charities-parser.ts` - NHS Charities API parser (NEW)
+- `src/services/mappers/groundwork-mapper.ts` - Maps to Organisation (NEW)
+- `src/services/mappers/nhs-charities-mapper.ts` - Maps to Organisation (NEW)
 
 ## Development Notes
 - HTML scraping using cheerio for webpage parsing
-- PDF parsing using pdf-parse for table extraction
-- Dynamic PDF URLs require fetching webpage first
-- Count validation ensures data integrity
-- Fail-fast approach for nightly runs
+- API discovery pattern: Extract endpoint from webpage JavaScript
+- Storepoint API for NHS Charities location data
+- Retry logic with exponential backoff for resilience
+- Fail-fast approach after retries exhausted
 
 ## Recent Changes
-- Branch 009-english-courts-can: Adding UK Courts and Tribunals data
-- CSV parsing for English/Welsh courts, HTML for NI courts
-- Fallback strategy for Scottish courts data
+- Branch 010-you-can-discover: Adding Groundwork Trusts and NHS Charities
+- HTML dropdown scraping for Groundwork, API discovery for NHS Charities
+- Branch 009-english-courts-can: Added UK Courts and Tribunals (~863)
 - Branch 008-ni-schools-you: Added Northern Ireland Schools (~1122)
 - Branch 007-we-re-already: Added UK Colleges (Scotland, Wales, NI)
 
