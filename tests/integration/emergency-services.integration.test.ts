@@ -29,20 +29,7 @@ describe('Emergency Services Integration', () => {
     </div>
   `;
 
-  const mockFireHTML = `
-    <table class="fire-services">
-      <tr>
-        <td>London Fire Brigade</td>
-        <td>Greater London</td>
-        <td>www.london-fire.gov.uk</td>
-      </tr>
-      <tr>
-        <td>Greater Manchester Fire and Rescue Service</td>
-        <td>Greater Manchester</td>
-        <td>www.manchesterfire.gov.uk</td>
-      </tr>
-    </table>
-  `;
+  // Fire services now use CSV data from official API, not HTML scraping
 
   const mockDevolvedHTML = `
     <div>
@@ -64,8 +51,52 @@ describe('Emergency Services Integration', () => {
       if (url.includes('police.uk')) {
         return { status: 200, data: mockPoliceHTML };
       }
-      if (url.includes('nfcc.org.uk')) {
-        return { status: 200, data: mockFireHTML };
+      if (url.includes('hub.arcgis.com')) {
+        // Mock the official fire services CSV data with enough entries to pass validation
+        const mockFireCSV = `FRA23CD,FRA23NM,ObjectId
+E06000032,London Fire and Emergency Planning Authority,1
+E10000002,Buckinghamshire & Milton Keynes,2
+E10000003,Cambridgeshire,3
+E10000006,Cumbria,4
+E10000007,Derbyshire,5
+E10000008,Devon & Somerset,6
+E10000009,Dorset & Wiltshire,7
+E10000011,East Sussex,8
+E10000012,Essex,9
+E10000013,Gloucestershire,10
+E10000015,Hertfordshire,11
+E10000016,Kent,12
+E10000017,Lancashire,13
+E10000018,Leicestershire,14
+E10000019,Lincolnshire,15
+E10000020,Norfolk,16
+E10000021,Northamptonshire,17
+E10000023,North Yorkshire,18
+E10000024,Nottinghamshire,19
+E10000025,Oxfordshire,20
+E10000027,Somerset,21
+E10000028,Staffordshire,22
+E10000029,Suffolk,23
+E10000030,Surrey,24
+E10000031,Warwickshire,25
+E10000032,West Sussex,26
+E11000007,Greater Manchester,27
+E11000001,Merseyside,28
+E11000003,South Yorkshire,29
+E11000005,Tyne and Wear,30
+E11000002,West Midlands,31
+E11000006,West Yorkshire,32
+W15000001,South Wales,33
+W15000002,Mid and West Wales,34
+W15000003,North Wales,35
+S15000001,Scotland,36
+N09000001,Northern Ireland,37
+E06000001,Avon,38
+E06000002,Bedfordshire,39
+E06000003,Royal Berkshire,40
+E06000004,Cheshire,41
+E06000005,Cleveland,42`;
+        return { status: 200, data: mockFireCSV };
       }
       if (url.includes('gov.uk/guidance')) {
         return { status: 200, data: mockDevolvedHTML };

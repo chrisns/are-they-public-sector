@@ -280,25 +280,19 @@ E31000003,Royal Berkshire,3`;
       const parser = new FireParser();
 
       // WHEN: Attempting to fetch
-      // THEN: Should return fallback data or empty array (not throw)
-      const services = await parser.fetchAll();
-      expect(Array.isArray(services)).toBe(true);
-      // Either returns fallback data or empty array if no fallback
-      expect(services.length).toBeGreaterThanOrEqual(0);
+      // THEN: Should throw an error (no fallback behavior)
+      await expect(parser.fetchAll()).rejects.toThrow('Network error');
     });
 
-    it('should use fallback when live data is insufficient', async () => {
+    it('should throw error when live data is insufficient', async () => {
       // GIVEN: Parser returns too few records from live data
       const mockEmptyCSV = 'FRA23CD,FRA23NM,ObjectId';
       (axios.get as jest.MockedFunction<typeof axios.get>).mockResolvedValue({ status: 200, data: mockEmptyCSV });
       const parser = new FireParser();
 
       // WHEN: Fetching services
-      // THEN: Should use fallback data or return empty array (not throw)
-      const services = await parser.fetchAll();
-      expect(Array.isArray(services)).toBe(true);
-      // Either returns fallback data or empty array if no fallback
-      expect(services.length).toBeGreaterThanOrEqual(0);
+      // THEN: Should throw an error (no fallback behavior)
+      await expect(parser.fetchAll()).rejects.toThrow('Only found 0 fire services from official data, expected at least 40');
     });
 
     it('should handle CSV with minimal required fields only', () => {

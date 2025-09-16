@@ -351,7 +351,7 @@ export class SchoolsMapper {
       return 'University Technical College';
     }
 
-    // Default fallback
+    // Default value if no specific phase type is matched
     return phaseType || 'School';
   }
 
