@@ -41,35 +41,34 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding Groundwork Trusts and NHS Charities data:
-- Groundwork Trusts: HTML scraping from dropdown at groundwork.org.uk/find-groundwork-near-me
-- NHS Charities: API discovery from nhscharitiestogether.co.uk then fetch JSON
-- New parsers: groundwork-parser.ts, nhs-charities-parser.ts
-- Both classified as Central Government (S.1311)
-- No deduplication between sources, minimum viable data is name only
+Replacing GIAS school data collection with CSV download:
+- Remove JSON scraping from schools-fetcher.ts (performance issues)
+- New GIAS CSV fetcher: Direct download from get-information-schools.service.gov.uk
+- Session management with cookies and CSRF tokens
+- ZIP extraction and CSV parsing (~52,000 schools)
+- Performance target: Under 30 seconds (vs 3-5 minutes current)
 
 ## Key Files
-- `specs/010-you-can-discover/spec.md` - Groundwork/NHS Charities feature specification
-- `specs/010-you-can-discover/plan.md` - Implementation plan
-- `specs/010-you-can-discover/contracts/` - Parser contracts
-- `src/services/groundwork-parser.ts` - Groundwork Trusts HTML parser (NEW)
-- `src/services/nhs-charities-parser.ts` - NHS Charities API parser (NEW)
-- `src/services/mappers/groundwork-mapper.ts` - Maps to Organisation (NEW)
-- `src/services/mappers/nhs-charities-mapper.ts` - Maps to Organisation (NEW)
+- `specs/011-i-have-found/spec.md` - GIAS CSV replacement specification
+- `specs/011-i-have-found/plan.md` - Implementation plan
+- `specs/011-i-have-found/contracts/` - Service contracts
+- `src/services/gias-csv-fetcher.ts` - GIAS CSV download service (NEW)
+- `src/services/schools-fetcher.ts` - JSON scraper to be REMOVED
+- `src/services/mappers/schools-mapper.ts` - Update for CSV fields
+- `test/gias.js` - Reference implementation for approach
 
 ## Development Notes
-- HTML scraping using cheerio for webpage parsing
-- API discovery pattern: Extract endpoint from webpage JavaScript
-- Storepoint API for NHS Charities location data
+- Session cookie management for bot detection bypass
+- CSRF token extraction from HTML for form submission
+- ZIP file extraction using Node.js zlib
+- CSV parsing with streaming for memory efficiency
 - Retry logic with exponential backoff for resilience
-- Fail-fast approach after retries exhausted
 
 ## Recent Changes
-- Branch 010-you-can-discover: Adding Groundwork Trusts and NHS Charities
-- HTML dropdown scraping for Groundwork, API discovery for NHS Charities
+- Branch 011-i-have-found: Replacing GIAS JSON scraping with CSV download
+- Branch 010-you-can-discover: Added Groundwork Trusts and NHS Charities
 - Branch 009-english-courts-can: Added UK Courts and Tribunals (~863)
 - Branch 008-ni-schools-you: Added Northern Ireland Schools (~1122)
-- Branch 007-we-re-already: Added UK Colleges (Scotland, Wales, NI)
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

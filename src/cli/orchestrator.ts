@@ -21,7 +21,7 @@ import { createSimpleParser, SimpleParserService } from '../services/parser-simp
 import { createSimpleMapper, SimpleMapperService } from '../services/mapper-simple.js';
 import { NHSParser } from '../services/nhs-parser.js';
 import { LocalAuthorityParser } from '../services/local-authority-parser.js';
-import { SchoolsParser } from '../services/schools-parser.js';
+import { GIASCSVFetcher } from '../services/gias-csv-fetcher.js';
 import { DevolvedAdminParser } from '../services/devolved-admin-parser.js';
 import { NHSMapper } from '../services/mappers/nhs-mapper.js';
 import { LocalAuthorityMapper } from '../services/mappers/local-authority-mapper.js';
@@ -207,7 +207,7 @@ export class Orchestrator {
   private writer: WriterService;
   private nhsParser: NHSParser;
   private localAuthorityParser: LocalAuthorityParser;
-  private schoolsParser: SchoolsParser;
+  private giasCSVFetcher: GIASCSVFetcher;
   private devolvedAdminParser: DevolvedAdminParser;
   private nhsMapper: NHSMapper;
   private localAuthorityMapper: LocalAuthorityMapper;
@@ -256,7 +256,7 @@ export class Orchestrator {
     // Initialize NHS, Local Authority, Schools, and Devolved Admin parsers
     this.nhsParser = new NHSParser();
     this.localAuthorityParser = new LocalAuthorityParser();
-    this.schoolsParser = new SchoolsParser();
+    this.giasCSVFetcher = new GIASCSVFetcher();
     this.devolvedAdminParser = new DevolvedAdminParser();
     this.nhsMapper = new NHSMapper();
     this.localAuthorityMapper = new LocalAuthorityMapper();
@@ -601,35 +601,34 @@ export class Orchestrator {
    */
   async fetchSchoolsData(): Promise<DataFetchResult> {
     this.logger.subsection('Fetching Schools data');
-    
+
     try {
-      this.logger.startProgress('Fetching schools from GIAS...');
-      
-      // Aggregate schools with appropriate options for CLI
-      // Limiting to a more specific search to avoid fetching 20,000+ schools
-      const result = await this.schoolsParser.aggregate({
-        searchTerm: 'academy',  // More targeted search - gets academy trusts which are most relevant
-        delayMs: 500,           // Rate limiting delay
-        maxRetries: 3           // Fewer retries for faster completion
-      });
-      
-      this.logger.stopProgress(`Fetched ${result.schools.length} schools`);
-      
-      // Map to Organisation model
+      this.logger.startProgress('Fetching schools from GIAS CSV service...');
+
+      // Fetch all schools via CSV download (much faster than JSON scraping)
+      const schools = await this.giasCSVFetcher.fetch();
+
+      this.logger.stopProgress(`Fetched ${schools.length} schools`);
+
+      // Map to Organisation model using the new mapMany method
       this.logger.startProgress('Mapping schools to organisation model...');
-      const mapped = this.schoolsMapper.mapMultiple(result.schools);
+      const mapped = this.schoolsMapper.mapMany(schools);
       this.logger.stopProgress(`Mapped ${mapped.length} school organisations`);
-      
+
+      // Count open schools for metadata
+      const openCount = schools.filter(s => s.EstablishmentStatus === 'Open').length;
+
       return {
         success: true,
         data: { organisations: mapped },
         organisations: mapped,
         metadata: {
           source: 'gias',
-          fetchedAt: result.metadata.fetchedAt,
+          fetchedAt: new Date().toISOString(),
           count: mapped.length,
-          totalCount: result.metadata.totalCount,
-          openCount: result.metadata.openCount
+          totalCount: schools.length,
+          openCount: openCount,
+          recordCount: schools.length
         }
       };
     } catch (error) {
