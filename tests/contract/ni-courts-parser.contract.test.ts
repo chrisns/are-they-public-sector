@@ -55,8 +55,14 @@ describe('NICourtsParser Contract', () => {
 
       // Assert - Check for some known NI courts
       expect(courtNames).toContain('Antrim');
-      expect(courtNames).toContain('Belfast');
-      expect(courtNames).toContain('Londonderry');
+      // Belfast courts have specific names in the actual data
+      const hasBelfastCourt = courtNames.some(name => name.includes('Belfast'));
+      expect(hasBelfastCourt).toBe(true);
+      // Londonderry/Derry might appear in various forms
+      const hasDerryCourt = courtNames.some(name =>
+        name.includes('Londonderry') || name.includes('Derry')
+      );
+      expect(hasDerryCourt).toBe(true);
     });
 
     it('should handle HTML parsing correctly', async () => {

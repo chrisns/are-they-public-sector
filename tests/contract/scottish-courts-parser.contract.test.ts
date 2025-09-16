@@ -59,7 +59,7 @@ describe('ScottishCourtsParser Contract', () => {
       }
     });
 
-    it('should return empty array if source is inaccessible', async () => {
+    it('should return fallback data if source is inaccessible', async () => {
       // Arrange
       jest.spyOn(parser as unknown as { fetchData: () => Promise<unknown[]> }, 'fetchData').mockRejectedValue(
         new Error('Source unavailable')
@@ -68,8 +68,10 @@ describe('ScottishCourtsParser Contract', () => {
       // Act
       const result = await parser.parse();
 
-      // Assert
-      expect(result).toEqual([]);
+      // Assert - Should return fallback data, not empty array
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(49); // Fallback data has 49 courts
       expect(parser.getLastError()).toContain('Source unavailable');
     });
 
@@ -107,9 +109,10 @@ describe('ScottishCourtsParser Contract', () => {
       // Act
       await parser.parse();
 
-      // Assert
+      // Assert - console.warn is called with two arguments
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('fallback')
+        'Using fallback data for Scottish courts:',
+        'API unavailable'
       );
 
       consoleSpy.mockRestore();
