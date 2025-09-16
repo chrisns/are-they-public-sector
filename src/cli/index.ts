@@ -192,10 +192,25 @@ async function runAggregation(options: CliOptions): Promise<void> {
       logger.info(`  • Sources: ${result.metadata?.sources?.length || 3} sources`);
       logger.info(`  • Duplicates merged: ${result.metadata?.statistics?.duplicatesFound || 0}`);
       logger.info(`  • Processing time: ${duration.toFixed(2)}s`);
-      
+
       if (options.cache) {
         logger.info(`  • Cache: Enabled (use --cache to reuse)`);
       }
+
+      // Report partial failures if any
+      if (result.partialFailures && result.partialFailures.length > 0) {
+        logger.warn(`  • WARNING: ${result.partialFailures.length} source(s) failed`);
+        if (options.debug) {
+          result.partialFailures.forEach(err => {
+            logger.debug(`    - ${err.message}`);
+          });
+        }
+      }
+    }
+
+    // Exit with error code if there were partial failures
+    if (result.partialFailures && result.partialFailures.length > 0) {
+      process.exit(1);  // Non-zero exit code for partial failures
     }
 
     // Success exit

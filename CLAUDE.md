@@ -41,19 +41,21 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding Northern Ireland Schools:
-- NI Education Department: Two-phase HTTP request (ViewState + Export)
-- Excel parsing: Extract ~1122 open schools with full metadata
-- Validation: Count must be ~1122 (±10% tolerance)
-- New parser: ni-schools-parser.ts with cheerio and xlsx
-- Fail-fast on service unavailability or format changes
+Adding UK Courts and Tribunals data:
+- English/Welsh Courts: CSV from factprod.blob.core.windows.net
+- NI Courts: HTML parsing from nidirect.gov.uk
+- Scottish Courts: API/network requests or fallback data
+- New parsers: english-courts-parser.ts, ni-courts-parser.ts, scottish-courts-parser.ts
+- No deduplication between sources, extract all available courts
 
 ## Key Files
-- `specs/008-ni-schools-you/spec.md` - NI Schools feature specification
-- `specs/008-ni-schools-you/plan.md` - Implementation plan
-- `specs/008-ni-schools-you/contracts/` - Parser contracts
-- `src/services/ni-schools-parser.ts` - NI Schools parser (NEW)
-- `src/services/mappers/ni-schools-mapper.ts` - Maps to Organisation (NEW)
+- `specs/009-english-courts-can/spec.md` - UK Courts feature specification
+- `specs/009-english-courts-can/plan.md` - Implementation plan
+- `specs/009-english-courts-can/contracts/` - Parser contracts
+- `src/services/english-courts-parser.ts` - English Courts CSV parser (NEW)
+- `src/services/ni-courts-parser.ts` - NI Courts HTML parser (NEW)
+- `src/services/scottish-courts-parser.ts` - Scottish Courts parser (NEW)
+- `src/services/mappers/courts-mapper.ts` - Maps to Organisation (NEW)
 
 ## Development Notes
 - HTML scraping using cheerio for webpage parsing
@@ -63,11 +65,11 @@ Adding Northern Ireland Schools:
 - Fail-fast approach for nightly runs
 
 ## Recent Changes
-- Branch 008-ni-schools-you: Adding Northern Ireland Schools data
-- Two-phase HTTP with ViewState/EventValidation for ASP.NET forms
-- Excel parsing for ~1122 schools with metadata extraction
+- Branch 009-english-courts-can: Adding UK Courts and Tribunals data
+- CSV parsing for English/Welsh courts, HTML for NI courts
+- Fallback strategy for Scottish courts data
+- Branch 008-ni-schools-you: Added Northern Ireland Schools (~1122)
 - Branch 007-we-re-already: Added UK Colleges (Scotland, Wales, NI)
-- Branch 006-you-can-find: Added emergency services (Police, Fire)
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

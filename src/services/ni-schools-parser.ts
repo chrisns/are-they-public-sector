@@ -155,7 +155,7 @@ export class NISchoolsParser {
       }
 
       // Map Excel columns to our interface
-      return jsonData.map((row: any) => this.mapExcelRow(row));
+      return jsonData.map((row: Record<string, unknown>) => this.mapExcelRow(row));
     } catch (error) {
       throw new Error(`Failed to parse Excel format: ${error}`);
     }

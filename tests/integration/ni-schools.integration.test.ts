@@ -3,9 +3,8 @@
  * Tests the end-to-end flow of fetching, parsing, and mapping NI schools data
  */
 
-import { NISchoolsParser } from '../../src/services/ni-schools-parser';
+import { NISchoolsParser, NISchoolRaw } from '../../src/services/ni-schools-parser';
 import { NISchoolsMapper } from '../../src/services/mappers/ni-schools-mapper';
-import { Organisation } from '../../src/models/organisation';
 
 describe('NI Schools Integration', () => {
   let parser: NISchoolsParser;
@@ -31,8 +30,8 @@ describe('NI Schools Integration', () => {
       // Check first organisation has correct structure
       const firstOrg = organisations[0];
       expect(firstOrg.name).toBeDefined();
-      expect(firstOrg.category).toBe('Northern Ireland School');
-      expect(firstOrg.subcategory).toMatch(/School$/);
+      expect(firstOrg.additionalProperties?.category).toBe('Northern Ireland School');
+      expect(firstOrg.additionalProperties?.subcategory).toMatch(/School$/);
     }, 60000); // 60 second timeout for network request
 
     it('should produce valid Organisation objects', async () => {
@@ -47,14 +46,14 @@ describe('NI Schools Integration', () => {
         expect(typeof org.name).toBe('string');
         expect(org.name.length).toBeGreaterThan(0);
 
-        expect(org.category).toBe('Northern Ireland School');
-        expect(org.subcategory).toBeDefined();
+        expect(org.additionalProperties?.category).toBe('Northern Ireland School');
+        expect(org.additionalProperties?.subcategory).toBeDefined();
         expect(['Primary School', 'Post-Primary School', 'Special School', 'Nursery School', 'Other School'])
-          .toContain(org.subcategory);
+          .toContain(org.additionalProperties?.subcategory);
 
         // Optional fields should have correct types if present
-        if (org.identifier) {
-          expect(typeof org.identifier).toBe('string');
+        if (org.additionalProperties?.identifier) {
+          expect(typeof org.additionalProperties.identifier).toBe('string');
         }
 
         if (org.location) {
@@ -63,15 +62,17 @@ describe('NI Schools Integration', () => {
           if (org.location.postcode) expect(typeof org.location.postcode).toBe('string');
         }
 
-        if (org.contact) {
-          if (org.contact.telephone) expect(typeof org.contact.telephone).toBe('string');
-          if (org.contact.email) expect(typeof org.contact.email).toBe('string');
-          if (org.contact.website) expect(typeof org.contact.website).toBe('string');
+        const contact = org.additionalProperties?.contact as Record<string, string> | undefined;
+        if (contact) {
+          if (contact.telephone) expect(typeof contact.telephone).toBe('string');
+          if (contact.email) expect(typeof contact.email).toBe('string');
+          if (contact.website) expect(typeof contact.website).toBe('string');
         }
 
-        if (org.metadata) {
-          expect(org.metadata.sourceSystem).toBe('NI Education Department');
-          expect(org.metadata.lastUpdated).toBeDefined();
+        const metadata = org.additionalProperties?.metadata as Record<string, unknown> | undefined;
+        if (metadata) {
+          expect(metadata.sourceSystem).toBe('NI Education Department');
+          expect(metadata.lastUpdated).toBeDefined();
         }
       });
     }, 60000);
@@ -82,7 +83,7 @@ describe('NI Schools Integration', () => {
       const organisations = mapper.mapMany(rawSchools);
 
       // Assert - check for presence of different school types
-      const subcategories = [...new Set(organisations.map(org => org.subcategory))];
+      const subcategories = [...new Set(organisations.map(org => org.additionalProperties?.subcategory as string))];
 
       expect(subcategories.length).toBeGreaterThan(1);
       expect(subcategories).toContain('Primary School');
@@ -90,7 +91,7 @@ describe('NI Schools Integration', () => {
       // Log distribution for debugging
       const distribution = subcategories.map(cat => ({
         type: cat,
-        count: organisations.filter(org => org.subcategory === cat).length
+        count: organisations.filter(org => org.additionalProperties?.subcategory === cat).length
       }));
       console.log('School type distribution:', distribution);
     }, 60000);
@@ -107,7 +108,7 @@ describe('NI Schools Integration', () => {
       expect(locationRate).toBeGreaterThan(80); // Expect >80% to have location data
 
       // Check some have postcodes
-      const withPostcode = organisations.filter(org => org.location?.postcode);
+      const withPostcode = organisations.filter(org => (org.additionalProperties?.metadata as Record<string, unknown>)?.postcode);
       expect(withPostcode.length).toBeGreaterThan(0);
     }, 60000);
 
@@ -117,15 +118,15 @@ describe('NI Schools Integration', () => {
       const organisations = mapper.mapMany(rawSchools);
 
       // Assert - check metadata preservation
-      const withMetadata = organisations.filter(org => org.metadata);
+      const withMetadata = organisations.filter(org => org.additionalProperties?.metadata);
       expect(withMetadata.length).toBe(organisations.length); // All should have metadata
 
       // Check for management types
-      const withManagementType = organisations.filter(org => org.metadata?.managementType);
+      const withManagementType = organisations.filter(org => (org.additionalProperties?.metadata as Record<string, unknown>)?.managementType);
       expect(withManagementType.length).toBeGreaterThan(0);
 
       // Sample some management types
-      const managementTypes = [...new Set(withManagementType.map(org => org.metadata!.managementType))];
+      const managementTypes = [...new Set(withManagementType.map(org => (org.additionalProperties?.metadata as Record<string, unknown>)?.managementType as string))];
       console.log('Management types found:', managementTypes);
     }, 60000);
   });
@@ -133,7 +134,7 @@ describe('NI Schools Integration', () => {
   describe('Error handling', () => {
     it('should handle network errors gracefully', async () => {
       // Arrange - mock network error
-      jest.spyOn(parser as any, 'fetchPage').mockRejectedValue(
+      jest.spyOn(parser as unknown as { fetchPage: (url: string) => Promise<string> }, 'fetchPage').mockRejectedValue(
         new Error('Network error: ECONNREFUSED')
       );
 
@@ -143,13 +144,13 @@ describe('NI Schools Integration', () => {
 
     it('should handle malformed data gracefully', async () => {
       // Arrange - mock malformed Excel data
-      jest.spyOn(parser as any, 'fetchPage').mockResolvedValue(`
+      jest.spyOn(parser as unknown as { fetchPage: (url: string) => Promise<string> }, 'fetchPage').mockResolvedValue(`
         <html>
           <input id="__VIEWSTATE" value="test" />
           <input id="__EVENTVALIDATION" value="test" />
         </html>
       `);
-      jest.spyOn(parser as any, 'fetchExcelData').mockResolvedValue(
+      jest.spyOn(parser as unknown as { fetchExcelData: (viewState: string, eventValidation: string) => Promise<Buffer> }, 'fetchExcelData').mockResolvedValue(
         Buffer.from('Invalid Excel content')
       );
 
@@ -165,14 +166,14 @@ describe('NI Schools Integration', () => {
         status: 'Open'
       }));
 
-      jest.spyOn(parser as any, 'fetchPage').mockResolvedValue(`
+      jest.spyOn(parser as unknown as { fetchPage: (url: string) => Promise<string> }, 'fetchPage').mockResolvedValue(`
         <html>
           <input id="__VIEWSTATE" value="test" />
           <input id="__EVENTVALIDATION" value="test" />
         </html>
       `);
-      jest.spyOn(parser as any, 'fetchExcelData').mockResolvedValue(Buffer.from('mock'));
-      jest.spyOn(parser as any, 'parseExcel').mockResolvedValue(mockSchools);
+      jest.spyOn(parser as unknown as { fetchExcelData: (viewState: string, eventValidation: string) => Promise<Buffer> }, 'fetchExcelData').mockResolvedValue(Buffer.from('mock'));
+      jest.spyOn(parser as unknown as { parseExcel: (buffer: Buffer) => Promise<NISchoolRaw[]> }, 'parseExcel').mockResolvedValue(mockSchools);
 
       // Act & Assert
       await expect(parser.parse()).rejects.toThrow(/count/i);

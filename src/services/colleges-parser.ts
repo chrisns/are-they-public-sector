@@ -4,7 +4,6 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import pdf from 'pdf-parse';
 import type {
   College,
   CollegeRegion,
@@ -219,6 +218,9 @@ export class CollegesParser {
 
         // Try to parse as PDF first
         try {
+          // Dynamically import pdf-parse to avoid initialization issues
+          const pdfParse = await import('pdf-parse');
+          const pdf = pdfParse.default;
           const data = await pdf(buffer);
           return this.parsePdf(data.text, region);
         } catch (pdfError) {

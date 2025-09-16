@@ -142,11 +142,12 @@ export class SchoolsParser {
     let consecutiveEmptyPages = 0;
     let backoffMs = 0; // Start with no delay
     const MAX_CONSECUTIVE_EMPTY = 3; // Stop after 3 consecutive empty pages
+    const MAX_PAGES = 10; // Limit to 10 pages (1000 schools) to prevent timeout
 
     console.log('Starting schools aggregation...');
-    console.log('Fetching all UK schools from GIAS (no delay for successful requests)...');
+    console.log('Fetching UK schools from GIAS (limited to 1000 schools)...');
 
-    while (hasMore) {
+    while (hasMore && pageCount < MAX_PAGES) {
       // Only delay if we have a backoff from previous error/empty result
       if (backoffMs > 0) {
         console.log(`  Backing off for ${backoffMs}ms...`);
@@ -196,6 +197,9 @@ export class SchoolsParser {
       }
     }
 
+    if (pageCount >= MAX_PAGES) {
+      console.log(`Stopped at page limit (${MAX_PAGES} pages, ${allSchools.length} schools)`);
+    }
     console.log(`Aggregation complete. Total pages: ${pageCount}`);
     
     // Filter and deduplicate

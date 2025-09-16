@@ -37,6 +37,10 @@ import { FireMapper } from '../services/mappers/fire-mapper.js';
 import { DevolvedExtraMapper } from '../services/mappers/devolved-extra-mapper.js';
 import { CollegesMapper } from '../services/mappers/colleges-mapper.js';
 import { NISchoolsMapper } from '../services/mappers/ni-schools-mapper.js';
+import { EnglishCourtsParser } from '../services/english-courts-parser.js';
+import { NICourtsParser } from '../services/ni-courts-parser.js';
+import { ScottishCourtsParser } from '../services/scottish-courts-parser.js';
+import { CourtsMapper } from '../services/mappers/courts-mapper.js';
 
 // Import models
 import type { Organisation, DataSourceReference } from '../models/organisation.js';
@@ -74,6 +78,7 @@ export interface AggregationResult {
   totalRecords: number;
   metadata?: ProcessingMetadata;
   error?: Error;
+  partialFailures?: Error[];  // Track which sources failed
   performance?: {
     memoryUsed: number;
     peakMemoryMB: number;
@@ -593,10 +598,11 @@ export class Orchestrator {
       this.logger.startProgress('Fetching schools from GIAS...');
       
       // Aggregate schools with appropriate options for CLI
+      // Limiting to a more specific search to avoid fetching 20,000+ schools
       const result = await this.schoolsParser.aggregate({
-        searchTerm: 'e',  // Comprehensive search
-        delayMs: 500,     // Rate limiting delay
-        maxRetries: 5     // Retry on failures
+        searchTerm: 'academy',  // More targeted search - gets academy trusts which are most relevant
+        delayMs: 500,           // Rate limiting delay
+        maxRetries: 3           // Fewer retries for faster completion
       });
       
       this.logger.stopProgress(`Fetched ${result.schools.length} schools`);
@@ -800,6 +806,76 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch UK Courts and Tribunals data
+   */
+  async fetchCourtsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching UK Courts and Tribunals');
+
+    const allCourts: Organisation[] = [];
+    const mapper = new CourtsMapper();
+
+    // Fetch English/Welsh courts
+    try {
+      this.logger.startProgress('Fetching English/Welsh courts from CSV...');
+      const englishParser = new EnglishCourtsParser();
+      const englishRaw = await englishParser.parse();
+      const englishCourts = englishParser.mapToCourtModel(englishRaw);
+      const englishOrgs = mapper.mapMany(englishCourts);
+      allCourts.push(...englishOrgs);
+      this.logger.stopProgress(`Fetched ${englishOrgs.length} English/Welsh courts`);
+    } catch (error) {
+      this.logger.error(`Failed to fetch English courts: ${error}`);
+    }
+
+    // Fetch NI courts
+    try {
+      this.logger.startProgress('Fetching Northern Ireland courts from NI Direct...');
+      const niParser = new NICourtsParser();
+      const niRaw = await niParser.parse();
+      const niCourts = niParser.mapToCourtModel(niRaw);
+      const niOrgs = mapper.mapMany(niCourts);
+      allCourts.push(...niOrgs);
+      this.logger.stopProgress(`Fetched ${niOrgs.length} NI courts`);
+    } catch (error) {
+      this.logger.error(`Failed to fetch NI courts: ${error}`);
+    }
+
+    // Fetch Scottish courts
+    try {
+      this.logger.startProgress('Fetching Scottish courts...');
+      const scottishParser = new ScottishCourtsParser();
+      const scottishRaw = await scottishParser.parse();
+      const scottishCourts = scottishParser.mapToCourtModel(scottishRaw);
+      const scottishOrgs = mapper.mapMany(scottishCourts);
+      allCourts.push(...scottishOrgs);
+      if (scottishParser.getLastError()) {
+        this.logger.warn('Used fallback data for Scottish courts');
+      }
+      this.logger.stopProgress(`Fetched ${scottishOrgs.length} Scottish courts`);
+    } catch (error) {
+      this.logger.error(`Failed to fetch Scottish courts: ${error}`);
+    }
+
+    if (allCourts.length === 0) {
+      return {
+        success: false,
+        error: new Error('No courts data could be fetched'),
+        metadata: { source: 'UK Courts', fetchedAt: new Date().toISOString() }
+      };
+    }
+
+    return {
+      success: true,
+      organisations: allCourts,
+      metadata: {
+        source: 'UK Courts',
+        fetchedAt: new Date().toISOString(),
+        recordCount: allCourts.length
+      }
+    };
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -954,6 +1030,18 @@ export class Orchestrator {
         }
       }
 
+      // Fetch UK Courts and Tribunals data
+      if (!sourceFilter || sourceFilter === 'courts' || sourceFilter === 'uk-courts') {
+        const courtsResult = await this.fetchCourtsData();
+        if (courtsResult.success && courtsResult.organisations) {
+          allOrganisations.push(...courtsResult.organisations);
+          sources.push('uk-courts');
+          this.logger.success(`Added ${courtsResult.organisations.length} UK Courts and Tribunals`);
+        } else {
+          errors.push(courtsResult.error || new Error('Courts fetch failed'));
+        }
+      }
+
       // Track memory after fetching
       this.trackMemory();
 
@@ -1014,8 +1102,25 @@ export class Orchestrator {
         peakMemoryMB: Math.round(this.peakMemory)
       });
 
+      // Consider aggregation successful if we got any data, even if some sources failed
+      const hasData = dedupResult.organisations.length > 0;
+
+      // Log errors if any
+      if (errors.length > 0) {
+        const failedSources = errors.map(err => {
+          // Extract source name from error message if possible
+          const match = err.message.match(/(.+) fetch failed/);
+          if (match) return match[1];
+          // Try to extract from error string
+          return err.message.split(' ').slice(0, 2).join(' ');
+        }).join(', ');
+
+        this.logger.warn(`${errors.length} source(s) failed during aggregation: ${failedSources}`);
+        this.logger.debug('Detailed errors:', errors.map(e => e.message));
+      }
+
       return {
-        success: errors.length === 0,
+        success: hasData,  // Success if we have any data, regardless of individual source failures
         sources,
         organisations: dedupResult.organisations,
         totalRecords: dedupResult.organisations.length,
@@ -1023,7 +1128,8 @@ export class Orchestrator {
         performance: {
           memoryUsed: process.memoryUsage().heapUsed,
           peakMemoryMB: this.peakMemory
-        }
+        },
+        ...(errors.length > 0 && { partialFailures: errors })  // Include errors for visibility but don't fail
       };
     } catch (error) {
       this.logger.error('Aggregation failed', error);

@@ -23,6 +23,7 @@ export enum OrganisationType {
   LEGISLATIVE_BODY = 'legislative_body',
   PUBLIC_BODY = 'public_body',
   EMERGENCY_SERVICE = 'emergency_service',
+  JUDICIAL_BODY = 'judicial_body',
   OTHER = 'other'
 }
 

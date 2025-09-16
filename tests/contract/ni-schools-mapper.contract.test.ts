@@ -30,12 +30,12 @@ describe('NISchoolsMapper Contract', () => {
 
       // Assert
       expect(result.name).toBe('Test Primary School');
-      expect(result.category).toBe('Northern Ireland School');
-      expect(result.subcategory).toBe('Primary School');
+      expect(result.additionalProperties?.category).toBe('Northern Ireland School');
+      expect(result.additionalProperties?.subcategory).toBe('Primary School');
       expect(result.location).toEqual({
         address: '123 Main Street',
-        town: 'Belfast',
-        postcode: 'BT1 1AA'
+        region: 'Belfast',
+        country: 'Northern Ireland'
       });
     });
 
@@ -57,7 +57,7 @@ describe('NISchoolsMapper Contract', () => {
           status: 'Open'
         };
         const result = mapper.map(school);
-        expect(result.subcategory).toBe(expected);
+        expect(result.additionalProperties?.subcategory).toBe(expected);
       });
     });
 
@@ -79,8 +79,8 @@ describe('NISchoolsMapper Contract', () => {
 
       // Assert
       expect(result.location?.address).toBe('123 Main Street, District Area, County Down');
-      expect(result.location?.town).toBe('Belfast');
-      expect(result.location?.postcode).toBe('BT1 1AA');
+      expect(result.location?.region).toBe('Belfast');
+      expect(result.additionalProperties?.metadata?.postcode).toBe('BT1 1AA');
     });
 
     it('should handle contact information', () => {
@@ -98,7 +98,7 @@ describe('NISchoolsMapper Contract', () => {
       const result = mapper.map(rawSchool);
 
       // Assert
-      expect(result.contact).toEqual({
+      expect(result.additionalProperties?.contact).toEqual({
         telephone: '028 9012 3456',
         email: 'info@school.ni.sch.uk',
         website: 'https://www.school.ni.sch.uk'
@@ -123,14 +123,15 @@ describe('NISchoolsMapper Contract', () => {
       const result = mapper.map(rawSchool);
 
       // Assert
-      expect(result.metadata?.managementType).toBe('Controlled');
-      expect(result.metadata?.principal).toBe('John Smith');
-      expect(result.metadata?.enrolment).toBe(250);
-      expect(result.metadata?.ageRange).toBe('4-11');
-      expect(result.metadata?.ward).toBe('Test Ward');
-      expect(result.metadata?.constituency).toBe('Belfast North');
-      expect(result.metadata?.sourceSystem).toBe('NI Education Department');
-      expect(result.metadata?.lastUpdated).toBeDefined();
+      const metadata = result.additionalProperties?.metadata as Record<string, unknown>;
+      expect(metadata?.managementType).toBe('Controlled');
+      expect(metadata?.principal).toBe('John Smith');
+      expect(metadata?.enrolment).toBe(250);
+      expect(metadata?.ageRange).toBe('4-11');
+      expect(metadata?.ward).toBe('Test Ward');
+      expect(metadata?.constituency).toBe('Belfast North');
+      expect(metadata?.sourceSystem).toBe('NI Education Department');
+      expect(metadata?.lastUpdated).toBeDefined();
     });
 
     it('should handle missing optional fields gracefully', () => {
@@ -146,11 +147,11 @@ describe('NISchoolsMapper Contract', () => {
 
       // Assert
       expect(result.name).toBe('Minimal School');
-      expect(result.category).toBe('Northern Ireland School');
-      expect(result.subcategory).toBe('Primary School');
-      expect(result.identifier).toBeUndefined();
+      expect(result.additionalProperties?.category).toBe('Northern Ireland School');
+      expect(result.additionalProperties?.subcategory).toBe('Primary School');
+      expect(result.additionalProperties?.identifier).toBeUndefined();
       expect(result.location).toBeUndefined();
-      expect(result.contact).toBeUndefined();
+      expect(result.additionalProperties?.contact).toBeUndefined();
     });
 
     it('should set identifier from reference number if available', () => {
@@ -166,7 +167,7 @@ describe('NISchoolsMapper Contract', () => {
       const result = mapper.map(rawSchool);
 
       // Assert
-      expect(result.identifier).toBe('NI-12345');
+      expect(result.additionalProperties?.identifier).toBe('NI-12345');
     });
 
     it('should trim and normalize whitespace in string fields', () => {
@@ -185,7 +186,7 @@ describe('NISchoolsMapper Contract', () => {
       // Assert
       expect(result.name).toBe('Test School');
       expect(result.location?.address).toBe('123 Main Street');
-      expect(result.location?.town).toBe('Belfast');
+      expect(result.location?.region).toBe('Belfast');
     });
 
     it('should handle empty strings as undefined', () => {
@@ -221,8 +222,9 @@ describe('NISchoolsMapper Contract', () => {
       const after = new Date();
 
       // Assert
-      expect(result.metadata?.lastUpdated).toBeDefined();
-      const timestamp = new Date(result.metadata!.lastUpdated);
+      const metadata = result.additionalProperties?.metadata as Record<string, unknown>;
+      expect(metadata?.lastUpdated).toBeDefined();
+      const timestamp = new Date(metadata!.lastUpdated as string);
       expect(timestamp.getTime()).toBeGreaterThanOrEqual(before.getTime());
       expect(timestamp.getTime()).toBeLessThanOrEqual(after.getTime());
     });
@@ -255,11 +257,11 @@ describe('NISchoolsMapper Contract', () => {
       // Assert
       expect(results).toHaveLength(3);
       expect(results[0].name).toBe('School 1');
-      expect(results[0].subcategory).toBe('Primary School');
+      expect(results[0].additionalProperties?.subcategory).toBe('Primary School');
       expect(results[1].name).toBe('School 2');
-      expect(results[1].subcategory).toBe('Post-Primary School');
+      expect(results[1].additionalProperties?.subcategory).toBe('Post-Primary School');
       expect(results[2].name).toBe('School 3');
-      expect(results[2].subcategory).toBe('Special School');
+      expect(results[2].additionalProperties?.subcategory).toBe('Special School');
     });
 
     it('should handle empty array', () => {
