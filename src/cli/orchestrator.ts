@@ -41,6 +41,10 @@ import { EnglishCourtsParser } from '../services/english-courts-parser.js';
 import { NICourtsParser } from '../services/ni-courts-parser.js';
 import { ScottishCourtsParser } from '../services/scottish-courts-parser.js';
 import { CourtsMapper } from '../services/mappers/courts-mapper.js';
+import { GroundworkParser } from '../services/groundwork-parser.js';
+import { NHSCharitiesParser } from '../services/nhs-charities-parser.js';
+import { GroundworkMapper } from '../services/mappers/groundwork-mapper.js';
+import { NHSCharitiesMapper } from '../services/mappers/nhs-charities-mapper.js';
 
 // Import models
 import type { Organisation, DataSourceReference } from '../models/organisation.js';
@@ -109,6 +113,10 @@ export interface WorkflowPhasesWithExtensions {
   fire?: WorkflowPhase & { recordCount?: number };
   devolvedExtra?: WorkflowPhase & { recordCount?: number };
   colleges?: WorkflowPhase & { recordCount?: number };
+  niSchools?: WorkflowPhase & { recordCount?: number };
+  courts?: WorkflowPhase & { recordCount?: number };
+  groundwork?: WorkflowPhase & { recordCount?: number };
+  nhsCharities?: WorkflowPhase & { recordCount?: number };
 }
 
 /**
@@ -876,6 +884,78 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch Groundwork Trusts data
+   */
+  async fetchGroundworkData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Groundwork Trusts');
+
+    try {
+      this.logger.startProgress('Fetching Groundwork Trusts from website...');
+
+      const parser = new GroundworkParser();
+      const mapper = new GroundworkMapper();
+      const trusts = await parser.parse();
+      const organisations = mapper.mapMany(trusts);
+
+      this.logger.stopProgress(`Fetched ${trusts.length} Groundwork Trusts`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'groundwork.org.uk',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch Groundwork data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'groundwork.org.uk', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
+   * Fetch NHS Charities data
+   */
+  async fetchNHSCharitiesData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching NHS Charities');
+
+    try {
+      this.logger.startProgress('Fetching NHS Charities from API...');
+
+      const parser = new NHSCharitiesParser();
+      const mapper = new NHSCharitiesMapper();
+      const charities = await parser.parse();
+      const organisations = mapper.mapMany(charities);
+
+      this.logger.stopProgress(`Fetched ${charities.length} NHS Charities (England/Wales)`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'nhscharitiestogether.co.uk',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      this.logger.error(`Failed to fetch NHS Charities data: ${error}`);
+      return {
+        success: false,
+        error: error as Error,
+        metadata: { source: 'nhscharitiestogether.co.uk', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -1039,6 +1119,30 @@ export class Orchestrator {
           this.logger.success(`Added ${courtsResult.organisations.length} UK Courts and Tribunals`);
         } else {
           errors.push(courtsResult.error || new Error('Courts fetch failed'));
+        }
+      }
+
+      // Fetch Groundwork Trusts data
+      if (!sourceFilter || sourceFilter === 'groundwork' || sourceFilter === 'groundwork-trusts') {
+        const groundworkResult = await this.fetchGroundworkData();
+        if (groundworkResult.success && groundworkResult.organisations) {
+          allOrganisations.push(...groundworkResult.organisations);
+          sources.push('groundwork.org.uk');
+          this.logger.success(`Added ${groundworkResult.organisations.length} Groundwork Trusts`);
+        } else {
+          errors.push(groundworkResult.error || new Error('Groundwork fetch failed'));
+        }
+      }
+
+      // Fetch NHS Charities data
+      if (!sourceFilter || sourceFilter === 'nhs-charities' || sourceFilter === 'nhs-charity') {
+        const nhsCharitiesResult = await this.fetchNHSCharitiesData();
+        if (nhsCharitiesResult.success && nhsCharitiesResult.organisations) {
+          allOrganisations.push(...nhsCharitiesResult.organisations);
+          sources.push('nhscharitiestogether.co.uk');
+          this.logger.success(`Added ${nhsCharitiesResult.organisations.length} NHS Charities`);
+        } else {
+          errors.push(nhsCharitiesResult.error || new Error('NHS Charities fetch failed'));
         }
       }
 
@@ -1348,6 +1452,30 @@ export class Orchestrator {
         recordCount: niSchoolsData.organisations?.length || 0
       };
 
+      // Fetch UK Courts
+      const courtsData = await this.fetchCourtsData();
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).courts = {
+        success: courtsData.success,
+        ...(courtsData.error && { error: courtsData.error }),
+        recordCount: courtsData.organisations?.length || 0
+      };
+
+      // Fetch Groundwork Trusts
+      const groundworkData = await this.fetchGroundworkData();
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).groundwork = {
+        success: groundworkData.success,
+        ...(groundworkData.error && { error: groundworkData.error }),
+        recordCount: groundworkData.organisations?.length || 0
+      };
+
+      // Fetch NHS Charities
+      const nhsCharitiesData = await this.fetchNHSCharitiesData();
+      (result.phases.dataFetching as WorkflowPhasesWithExtensions).nhsCharities = {
+        success: nhsCharitiesData.success,
+        ...(nhsCharitiesData.error && { error: nhsCharitiesData.error }),
+        recordCount: nhsCharitiesData.organisations?.length || 0
+      };
+
       // Combine all organisations
       const allOrganisations = [
         ...(govUkData.organisations || []),
@@ -1361,7 +1489,10 @@ export class Orchestrator {
         ...(fireData.organisations || []),
         ...(devolvedExtraData.organisations || []),
         ...(collegesData.organisations || []),
-        ...(niSchoolsData.organisations || [])
+        ...(niSchoolsData.organisations || []),
+        ...(courtsData.organisations || []),
+        ...(groundworkData.organisations || []),
+        ...(nhsCharitiesData.organisations || [])
       ];
 
       // Phase 2: Data Mapping (already done in fetch methods)
