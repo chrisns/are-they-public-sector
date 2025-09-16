@@ -32,6 +32,7 @@ export interface FireService extends EmergencyService {
   authorityType: 'county' | 'metropolitan' | 'combined_authority' | 'unitary';
   stationCount?: number;           // Number of fire stations
   coverage?: string[];             // List of areas covered
+  officialCode?: string;           // Official government code (e.g. E31000001)
 }
 
 /**

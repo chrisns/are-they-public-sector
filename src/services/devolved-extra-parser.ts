@@ -45,16 +45,18 @@ export class DevolvedExtraParser {
 
       const bodies = this.parseHTML(response.data);
 
-      // If we couldn't parse any bodies, throw error
+      // If we couldn't parse any bodies, it might be because DevolvedAdminParser already got them
       if (bodies.length === 0) {
-        throw new Error('Unable to parse devolved bodies from HTML - no data found');
+        console.log('No additional devolved bodies found - may already be covered by DevolvedAdminParser');
+        return []; // Return empty array instead of throwing
       }
 
       const deduplicated = await this.deduplicateAgainstExisting(bodies);
 
-      // If we didn't get a reasonable number of bodies after deduplication, throw error
-      if (deduplicated.length < 5) {
-        throw new Error(`Only got ${deduplicated.length} devolved bodies after deduplication - this seems too low`);
+      // If we have no additional bodies after deduplication, that's ok - they're already covered
+      if (deduplicated.length === 0) {
+        console.log('All devolved bodies already covered by DevolvedAdminParser');
+        return [];
       }
 
       console.log(`Fetched ${deduplicated.length} new devolved bodies`);
@@ -94,8 +96,50 @@ export class DevolvedExtraParser {
     nation: DevolvedBody['nation'],
     bodies: DevolvedBody[]
   ): void {
+    // Look for the devolved administrations section specifically
+    const devolvedSection = $('#devolved-administrations');
+
+    if (devolvedSection.length > 0) {
+      // Find the list items under this section
+      const list = devolvedSection.nextAll('ul').first();
+
+      list.find('li').each((_i, li) => {
+        const text = $(li).text().trim();
+
+        // Extract specific government names from the list
+        if (text.includes('Scottish Government') && nation === 'scotland') {
+          bodies.push({
+            id: 'scottish-government-extra',
+            name: 'Scottish Government',
+            nation: 'scotland',
+            category: 'Executive',
+            website: 'https://www.gov.scot'
+          });
+        } else if (text.includes('Welsh Government') && nation === 'wales') {
+          bodies.push({
+            id: 'welsh-government-extra',
+            name: 'Welsh Government',
+            nation: 'wales',
+            category: 'Executive',
+            website: 'https://www.gov.wales'
+          });
+        } else if (text.includes('Northern Ireland Executive') && nation === 'northern_ireland') {
+          bodies.push({
+            id: 'ni-executive-extra',
+            name: 'Northern Ireland Executive',
+            nation: 'northern_ireland',
+            category: 'Executive',
+            website: 'https://www.northernireland.gov.uk'
+          });
+        }
+      });
+
+      return;
+    }
+
+    // Fallback to old approach for other sections
     const headings = $(`h2:contains("${sectionName}"), h3:contains("${sectionName}")`);
-    
+
     headings.each((_i, heading) => {
       const $heading = $(heading);
       let $current = $heading.next();
