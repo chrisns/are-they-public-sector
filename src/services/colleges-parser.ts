@@ -4,7 +4,6 @@
 
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { mkdirSync, writeFileSync, existsSync } from 'fs';
 import type {
   College,
   CollegeRegion,
@@ -219,9 +218,6 @@ export class CollegesParser {
 
         // Try to parse as PDF first
         try {
-          // Create workaround for pdf-parse debug mode bug if needed
-          await this.ensurePdfParseTestFileExists();
-
           // Dynamically import pdf-parse to avoid initialization issues
           const pdfParse = await import('pdf-parse');
           const pdf = pdfParse.default;
@@ -320,39 +316,5 @@ export class CollegesParser {
     }
 
     return validation;
-  }
-
-
-  /**
-   * Workaround for pdf-parse debug mode bug
-   * Creates the missing test file that pdf-parse tries to access in debug mode
-   */
-  private async ensurePdfParseTestFileExists(): Promise<void> {
-    try {
-      const testFilePath = './test/data/05-versions-space.pdf';
-
-      if (!existsSync('./test')) {
-        mkdirSync('./test', { recursive: true });
-      }
-
-      if (!existsSync('./test/data')) {
-        mkdirSync('./test/data', { recursive: true });
-      }
-
-      if (!existsSync(testFilePath)) {
-        // Create a minimal PDF file content to prevent the ENOENT error
-        // This is a minimal PDF header that pdf-parse can handle without crashing
-        const minimalPdfContent = Buffer.from([
-          0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34, // %PDF-1.4
-          0x0A, 0x25, 0xC4, 0xE5, 0xF2, 0xE5, 0xEB, 0xA7, // binary marker
-          0xF3, 0xA0, 0xD0, 0xC4, 0xC6, 0x0A
-        ]);
-        writeFileSync(testFilePath, minimalPdfContent);
-      }
-    } catch (error) {
-      // If we can't create the file, just log and continue
-      // PDF parsing will handle any subsequent failures
-      console.warn('Could not create pdf-parse test file workaround:', error);
-    }
   }
 }
