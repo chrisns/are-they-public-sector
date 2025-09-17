@@ -54,24 +54,25 @@ export class CollegesParser {
    * Main aggregation method - orchestrates the full process
    */
   async aggregate(): Promise<CollegesResult> {
-    // 1. Fetch webpage
+    // ALWAYS refetch the webpage to get fresh PDF links
+    // This ensures we're not using stale/hardcoded URLs
     const webpageResult = await this.fetchWebpage();
 
-    // 2. Extract PDF links
+    // Extract PDF links dynamically from the current page
     const pdfLinks = await this.extractPdfLinks(webpageResult.html);
 
-    // 3. Extract expected counts
+    // Extract expected counts
     const expectedCounts = await this.extractCounts(webpageResult.html);
 
-    // 4. Download and parse PDFs
+    // Download and parse PDFs using the fresh links
     const scotlandColleges = await this.downloadAndParsePdf(pdfLinks.scotland, 'Scotland');
     const walesColleges = await this.downloadAndParsePdf(pdfLinks.wales, 'Wales');
     const niColleges = await this.downloadAndParsePdf(pdfLinks.northernIreland, 'Northern Ireland');
 
-    // 5. Combine all colleges
+    // Combine all colleges
     const allColleges = [...scotlandColleges, ...walesColleges, ...niColleges];
 
-    // 6. Calculate actual counts
+    // Calculate actual counts
     const actualCounts: CollegeCounts & { total: number } = {
       scotland: scotlandColleges.length,
       wales: walesColleges.length,
@@ -79,10 +80,10 @@ export class CollegesParser {
       total: allColleges.length
     };
 
-    // 7. Validate counts
+    // Validate counts
     const validation = this.validateCounts(expectedCounts, actualCounts);
 
-    // 8. Return result
+    // Return result
     return {
       colleges: allColleges,
       metadata: {
@@ -251,7 +252,9 @@ export class CollegesParser {
       const colleges: College[] = [];
       const lines = content.split('\n');
       const timestamp = new Date().toISOString();
-      const source = `${this.BASE_URL}/sites/default/files/${region.toLowerCase().replace(' ', '-')}-colleges.pdf`;
+      // Use the base URL but don't hardcode the specific PDF path
+      // The actual PDF URL was fetched dynamically
+      const source = `${this.AOC_URL}`;
 
       for (const line of lines) {
         const trimmed = line.trim();

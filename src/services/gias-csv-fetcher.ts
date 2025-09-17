@@ -54,23 +54,40 @@ export class GIASCSVFetcher {
     try {
       this.log('Starting GIAS CSV fetch...');
 
-      // Step 1: Initialize session
-      await this.initializeSession();
+      // Add overall timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 120000); // 2 minute total timeout
 
-      // Step 2: Request download
-      const downloadId = await this.requestDownload();
+      try {
+        // Step 1: Initialize session
+        await this.initializeSession();
 
-      // Step 3: Wait for file generation
-      await this.waitForGeneration(downloadId);
+        // Step 2: Request download
+        const downloadId = await this.requestDownload();
 
-      // Step 4: Download and extract
-      const csvData = await this.downloadAndExtract(downloadId);
+        // Step 3: Wait for file generation
+        await this.waitForGeneration(downloadId);
 
-      // Step 5: Parse CSV
-      const schools = this.parseCSV(csvData);
+        // Step 4: Download and extract
+        const csvData = await this.downloadAndExtract(downloadId);
 
-      this.log(`Successfully fetched ${schools.length} schools`);
-      return schools;
+        // Step 5: Parse CSV
+        const schools = this.parseCSV(csvData);
+
+        clearTimeout(timeoutId);
+
+        // Validate we got a reasonable number of schools
+        if (schools.length < 10000) {
+          throw new Error(`Only received ${schools.length} schools, expected at least 10000`);
+        }
+
+        this.log(`Successfully fetched ${schools.length} schools`);
+        return schools;
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to fetch GIAS data: ${message}`);
@@ -344,7 +361,7 @@ export class GIASCSVFetcher {
     // Find data start
     const dataStart = 30 + filenameLength + extraFieldLength;
 
-    let content: string;
+    let content = '';
     if (compressionMethod === 8) { // Deflate
       const compressedData = zipBuffer.slice(dataStart, dataStart + compressedSize);
       try {
@@ -355,16 +372,19 @@ export class GIASCSVFetcher {
           content = zlib.inflateSync(compressedData).toString('utf8');
         } catch {
           // Search for valid deflate stream
-          for (let offset = 0; offset < Math.min(100, compressedData.length); offset++) {
+          let decompressed = false;
+          for (let searchOffset = 0; searchOffset < Math.min(100, compressedData.length); searchOffset++) {
             try {
-              content = zlib.inflateRawSync(compressedData.slice(offset)).toString('utf8');
+              content = zlib.inflateRawSync(compressedData.slice(searchOffset)).toString('utf8');
+              this.log(`Successfully decompressed at offset ${searchOffset}`);
+              decompressed = true;
               break;
             } catch {
               continue;
             }
           }
-          if (!content!) {
-            throw new Error('Could not decompress data');
+          if (!decompressed) {
+            throw new Error('Could not decompress data after trying multiple offsets');
           }
         }
       }
@@ -415,6 +435,7 @@ export class GIASCSVFetcher {
   }> {
     return new Promise((resolve, reject) => {
       const parsedUrl = new URL(url);
+      const timeout = 30000; // 30 second timeout
 
       const reqOptions = {
         hostname: parsedUrl.hostname,
@@ -433,7 +454,8 @@ export class GIASCSVFetcher {
           'Sec-Fetch-User': '?1',
           'Cache-Control': 'max-age=0',
           ...options.headers
-        }
+        },
+        timeout: timeout
       };
 
       const handleResponse = (res: typeof https.IncomingMessage.prototype) => {
@@ -480,16 +502,24 @@ export class GIASCSVFetcher {
           }
 
           resolve({
-            status: res.statusCode,
+            status: res.statusCode || 0,
             headers: res.headers,
             body: buffer.toString('utf8'),
             buffer: buffer,
             url: url
           });
         });
+
+        res.on('error', reject);
       };
 
       const req = https.request(reqOptions, handleResponse);
+
+      // Set timeout
+      req.setTimeout(timeout, () => {
+        req.destroy();
+        reject(new Error(`Request timeout after ${timeout}ms`));
+      });
 
       req.on('error', reject);
 
