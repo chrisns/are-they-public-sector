@@ -578,14 +578,18 @@ export class GIASCSVFetcher {
   }
 
   /**
-   * Get current date parameters
+   * Get yesterday's date parameters (GIAS requires yesterday's date for reliable downloads)
    */
   private getCurrentDateParams(): { day: number; month: number; year: number; dateStr: string } {
-    const now = new Date();
-    const day = now.getDate();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1); // Use yesterday's date
+
+    const day = yesterday.getDate();
+    const month = yesterday.getMonth() + 1;
+    const year = yesterday.getFullYear();
     const dateStr = `${month}/${day}/${year} 12:00:00 AM`;
+
+    this.log(`Using date: ${dateStr}`);
     return { day, month, year, dateStr };
   }
 
