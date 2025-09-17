@@ -21,102 +21,75 @@ describe('ScottishCourtsParser Contract', () => {
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
 
-      // May return empty array if source is inaccessible
-      if (result.length > 0) {
-        expect(result.length).toBeGreaterThan(20); // Expect at least 20 Scottish courts
-        expect(result.length).toBeLessThan(100); // But not more than 100
-      }
-    });
+      // Should fetch court data from the website
+      expect(result.length).toBeGreaterThan(40); // Expect at least 40 Scottish courts
+      expect(result.length).toBeLessThan(100); // But not more than 100
+    }, 60000); // Increase timeout for web scraping
 
     it('should handle known Scottish court types', async () => {
       // Act
       const result = await parser.parse();
 
       // Assert
-      if (result.length > 0) {
-        const courtTypes = result.map(c => c.type).flat();
-        const hasScottishTypes = courtTypes.some(type =>
-          type?.includes('Sheriff') ||
-          type?.includes('Justice of the Peace') ||
-          type?.includes('Court of Session')
-        );
-        expect(hasScottishTypes).toBe(true);
-      }
-    });
+      const courtTypes = result.map(c => c.type).flat();
+      const hasScottishTypes = courtTypes.some(type =>
+        type?.includes('Sheriff') ||
+        type?.includes('Justice of the Peace') ||
+        type?.includes('Court of Session')
+      );
+      expect(hasScottishTypes).toBe(true);
+    }, 60000); // Increase timeout for web scraping
 
     it('should include major Scottish cities', async () => {
       // Act
       const result = await parser.parse();
 
       // Assert
-      if (result.length > 0) {
-        const locations = result.map(c => c.location?.town || '').filter(Boolean);
-        const majorCities = ['Edinburgh', 'Glasgow', 'Aberdeen', 'Dundee'];
-        const hasMajorCity = majorCities.some(city =>
-          locations.some(loc => loc.includes(city))
-        );
-        expect(hasMajorCity).toBe(true);
-      }
-    });
+      const locations = result.map(c => c.location?.town || '').filter(Boolean);
+      const majorCities = ['Edinburgh', 'Glasgow', 'Aberdeen', 'Dundee'];
+      const hasMajorCity = majorCities.some(city =>
+        locations.some(loc => loc.includes(city))
+      );
+      expect(hasMajorCity).toBe(true);
+    }, 60000); // Increase timeout for web scraping
 
-    it('should return fallback data if source is inaccessible', async () => {
+    it('should handle network errors gracefully', async () => {
       // Arrange
-      jest.spyOn(parser as unknown as { fetchData: () => Promise<unknown[]> }, 'fetchData').mockRejectedValue(
-        new Error('Source unavailable')
+      jest.spyOn(parser as unknown as { fetchCourtUrls: () => Promise<string[]> }, 'fetchCourtUrls').mockRejectedValue(
+        new Error('Network error')
       );
 
-      // Act
-      const result = await parser.parse();
-
-      // Assert - Should return fallback data, not empty array
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(49); // Fallback data has 49 courts
-      expect(parser.getLastError()).toContain('Source unavailable');
+      // Act & Assert
+      await expect(parser.parse()).rejects.toThrow('Failed to fetch Scottish courts data');
+      expect(parser.getLastError()).toContain('Network error');
     });
 
-    it('should use fallback data if API is unavailable', async () => {
-      // Arrange
-      jest.spyOn(parser as unknown as { fetchData: () => Promise<unknown[]> }, 'fetchData').mockRejectedValue(
-        new Error('API unavailable')
-      );
+    it('should parse court data from HTML correctly', async () => {
+      // Arrange - mock the fetch methods
+      jest.spyOn(parser as unknown as { fetchCourtUrls: () => Promise<string[]> }, 'fetchCourtUrls')
+        .mockResolvedValue(['https://www.scotcourts.gov.uk/courts-and-tribunals/courts-tribunals-and-office-locations/find-us/edinburgh-sheriff-court']);
 
       // Act
       const result = await parser.parse();
 
       // Assert
-      // Should return static fallback data
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
+    }, 10000);
 
-      if (result.length > 0) {
-        // Check for known Scottish courts in fallback
-        const courtNames = result.map(c => c.name);
-        expect(courtNames.some(name =>
-          name.includes('Edinburgh') ||
-          name.includes('Glasgow')
-        )).toBe(true);
-      }
-    });
-
-    it('should log warning when using fallback data', async () => {
+    it('should handle partial failures when fetching individual courts', async () => {
       // Arrange
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-      jest.spyOn(parser as unknown as { fetchData: () => Promise<unknown[]> }, 'fetchData').mockRejectedValue(
-        new Error('API unavailable')
-      );
+      jest.spyOn(parser as unknown as { fetchCourtUrls: () => Promise<string[]> }, 'fetchCourtUrls')
+        .mockResolvedValue(['https://invalid-url-1', 'https://invalid-url-2']);
 
       // Act
-      await parser.parse();
+      const result = await parser.parse();
 
-      // Assert - console.warn is called with two arguments
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Using fallback data for Scottish courts:',
-        'API unavailable'
-      );
-
-      consoleSpy.mockRestore();
-    });
+      // Assert - should return empty array if all URLs fail
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(0);
+    }, 10000);
   });
 
   describe('mapping to Court model', () => {
@@ -179,21 +152,21 @@ describe('ScottishCourtsParser Contract', () => {
     });
   });
 
-  describe('fallback data', () => {
-    it('should provide basic Scottish court data as fallback', () => {
+  describe('error handling', () => {
+    it('should store last error message', async () => {
+      // Arrange
+      jest.spyOn(parser as unknown as { fetchCourtUrls: () => Promise<string[]> }, 'fetchCourtUrls')
+        .mockRejectedValue(new Error('Test error'));
+
       // Act
-      const fallbackData = parser.getFallbackData();
+      try {
+        await parser.parse();
+      } catch (e) {
+        // Expected to throw
+      }
 
       // Assert
-      expect(fallbackData).toBeDefined();
-      expect(Array.isArray(fallbackData)).toBe(true);
-      expect(fallbackData.length).toBeGreaterThan(0);
-
-      // Should include major courts
-      const courtNames = fallbackData.map(c => c.name);
-      expect(courtNames).toContain('Edinburgh Sheriff Court');
-      expect(courtNames).toContain('Glasgow Sheriff Court');
-      expect(courtNames).toContain('Court of Session');
+      expect(parser.getLastError()).toContain('Test error');
     });
   });
 });

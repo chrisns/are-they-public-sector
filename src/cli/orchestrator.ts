@@ -820,6 +820,7 @@ export class Orchestrator {
 
     const allCourts: Organisation[] = [];
     const mapper = new CourtsMapper();
+    const failures: Error[] = [];
 
     // Fetch English/Welsh courts
     try {
@@ -832,6 +833,7 @@ export class Orchestrator {
       this.logger.stopProgress(`Fetched ${englishOrgs.length} English/Welsh courts`);
     } catch (error) {
       this.logger.error(`Failed to fetch English courts: ${error}`);
+      failures.push(error instanceof Error ? error : new Error(String(error)));
     }
 
     // Fetch NI courts
@@ -845,6 +847,7 @@ export class Orchestrator {
       this.logger.stopProgress(`Fetched ${niOrgs.length} NI courts`);
     } catch (error) {
       this.logger.error(`Failed to fetch NI courts: ${error}`);
+      failures.push(error instanceof Error ? error : new Error(String(error)));
     }
 
     // Fetch Scottish courts
@@ -858,24 +861,28 @@ export class Orchestrator {
       this.logger.stopProgress(`Fetched ${scottishOrgs.length} Scottish courts`);
     } catch (error) {
       this.logger.error(`Failed to fetch Scottish courts: ${error}`);
+      failures.push(error instanceof Error ? error : new Error(String(error)));
     }
 
-    if (allCourts.length === 0) {
+    // If we have no data and all sources failed, return complete failure
+    if (allCourts.length === 0 && failures.length > 0) {
       return {
         success: false,
-        error: new Error('No courts data could be fetched'),
+        error: new Error(`No courts data could be fetched. ${failures.length} source(s) failed.`),
         metadata: { source: 'UK Courts', fetchedAt: new Date().toISOString() }
       };
     }
 
+    // If we have some data but also some failures, return partial success with error
     return {
-      success: true,
+      success: allCourts.length > 0,
       organisations: allCourts,
       metadata: {
         source: 'UK Courts',
         fetchedAt: new Date().toISOString(),
         recordCount: allCourts.length
-      }
+      },
+      ...(failures.length > 0 && { error: new Error(`Courts fetched with ${failures.length} partial failure(s)`) })
     };
   }
 

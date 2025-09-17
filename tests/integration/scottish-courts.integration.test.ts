@@ -57,14 +57,14 @@ describe('Scottish Courts Integration', () => {
     expect(hasMajorCity).toBe(true);
   }, 30000);
 
-  it('should handle fallback data gracefully', async () => {
+  it('should handle Scottish court data properly', async () => {
     // Act
     const rawCourts = await parser.parse();
     const courts = parser.mapToCourtModel(rawCourts);
     const organisations = mapper.mapMany(courts);
 
     // Assert
-    expect(organisations.length).toBeGreaterThan(40); // We have 49 courts in fallback
+    expect(organisations.length).toBeGreaterThan(40); // Should have at least 40 Scottish courts
     expect(organisations[0].sources[0].confidence).toBe(1.0);
-  }, 30000);
+  }, 60000); // Increase timeout for web scraping
 });
