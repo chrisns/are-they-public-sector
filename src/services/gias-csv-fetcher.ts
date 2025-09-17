@@ -253,6 +253,7 @@ export class GIASCSVFetcher {
 
     this.log(`Download response status: ${response.status}`);
     this.log(`Response URL: ${response.url}`);
+    this.log(`Response buffer size: ${response.buffer ? response.buffer.length : 0}`);
 
     // Check if we got redirected to the actual file download
     if (response.url && response.url.includes('File.xhtml')) {
@@ -267,10 +268,10 @@ export class GIASCSVFetcher {
         }
       });
 
-      if (zipResponse.buffer && zipResponse.buffer.length > 0) {
+      if (zipResponse.buffer && zipResponse.buffer.length > 30) {
         return this.extractCSV(zipResponse.buffer);
       } else {
-        throw new Error('Empty response from file download');
+        throw new Error(`Response too small to be a ZIP file: ${zipResponse.buffer?.length || 0} bytes`);
       }
     } else if (response.status === 302 && response.headers.location) {
       // Follow redirect to ZIP file
@@ -284,22 +285,22 @@ export class GIASCSVFetcher {
         }
       });
 
-      if (zipResponse.buffer && zipResponse.buffer.length > 0) {
+      if (zipResponse.buffer && zipResponse.buffer.length > 30) {
         return this.extractCSV(zipResponse.buffer);
       } else {
-        throw new Error('Empty response from redirect');
+        throw new Error(`Redirect response too small: ${zipResponse.buffer?.length || 0} bytes`);
       }
     } else if (response.status === 200) {
       // Maybe we got the file directly
-      this.log(`Direct response, checking if it's a ZIP...`);
-      if (response.buffer && response.buffer.length > 0) {
+      this.log(`Direct response, checking if it's a ZIP (size: ${response.buffer?.length || 0})...`);
+      if (response.buffer && response.buffer.length > 30) {
         // Check if it's actually a ZIP
         if (response.buffer[0] === 0x50 && response.buffer[1] === 0x4B) {
           return this.extractCSV(response.buffer);
         } else {
           // Maybe it's an HTML page, let's try the direct Azure URL
           const fileUrl = `https://ea-edubase-api-prod.azurewebsites.net/edubase/downloads/File.xhtml?id=${uuid}`;
-          this.log(`Not a ZIP, trying direct download from: ${fileUrl}`);
+          this.log(`Not a ZIP (first bytes: ${response.buffer.slice(0, 10).toString('hex')}), trying direct download from: ${fileUrl}`);
 
           const zipResponse = await this.makeRequest(fileUrl, {
             headers: {
@@ -308,16 +309,18 @@ export class GIASCSVFetcher {
             }
           });
 
-          if (zipResponse.buffer && zipResponse.buffer.length > 0) {
+          if (zipResponse.buffer && zipResponse.buffer.length > 30) {
             return this.extractCSV(zipResponse.buffer);
           } else {
-            throw new Error('Empty response from direct download');
+            throw new Error(`Direct download too small: ${zipResponse.buffer?.length || 0} bytes`);
           }
         }
+      } else {
+        throw new Error(`Response buffer too small or missing: ${response.buffer?.length || 0} bytes`);
       }
     }
 
-    throw new Error(`Unexpected response: ${response.status}`);
+    throw new Error(`Unexpected response: status=${response.status}, buffer=${response.buffer?.length || 0} bytes`);
   }
 
   /**
@@ -334,19 +337,19 @@ export class GIASCSVFetcher {
     }
 
     // Check ZIP signature
-    if (zipBuffer.length < 4) {
-      throw new Error(`Buffer too small: ${zipBuffer.length} bytes`);
+    if (zipBuffer.length < 30) {
+      throw new Error(`Buffer too small for ZIP file: ${zipBuffer.length} bytes (need at least 30)`);
     }
     if (zipBuffer[0] !== 0x50 || zipBuffer[1] !== 0x4B) {
       const sig = `${zipBuffer[0].toString(16)}${zipBuffer[1].toString(16)}`;
       throw new Error(`Invalid ZIP file signature: ${sig} (expected 504b)`);
     }
 
-    // Read ZIP header
-    const compressionMethod = zipBuffer.readUInt16LE(8);
-    let compressedSize = zipBuffer.readUInt32LE(18);
-    const filenameLength = zipBuffer.readUInt16LE(26);
-    const extraFieldLength = zipBuffer.readUInt16LE(28);
+    // Safely read ZIP header with bounds checking
+    const compressionMethod = zipBuffer.length >= 10 ? zipBuffer.readUInt16LE(8) : 0;
+    let compressedSize = zipBuffer.length >= 22 ? zipBuffer.readUInt32LE(18) : 0;
+    const filenameLength = zipBuffer.length >= 28 ? zipBuffer.readUInt16LE(26) : 0;
+    const extraFieldLength = zipBuffer.length >= 30 ? zipBuffer.readUInt16LE(28) : 0;
 
     // Handle ZIP64 or missing sizes
     if (compressedSize === 0 || compressedSize === 0xFFFFFFFF) {
