@@ -1,8 +1,8 @@
 import { CommunityCouncilsMapper } from '../../src/services/mappers/community-councils-mapper';
-import { WelshCommunityRaw } from '../../src/models/welsh-community-raw';
-import { ScottishCommunityRaw } from '../../src/models/scottish-community-raw';
-import { NIHealthTrustRaw } from '../../src/models/ni-health-trust-raw';
-import { Organisation } from '../../src/models/organisation';
+import type { WelshCommunityRaw } from '../../src/models/welsh-community';
+import type { ScottishCommunityRaw } from '../../src/models/scottish-community';
+import type { NIHealthTrustRaw } from '../../src/models/ni-health-trust';
+import type { Organisation } from '../../src/models/organisation';
 
 describe('CommunityCouncilsMapper Contract Tests', () => {
   let mapper: CommunityCouncilsMapper;

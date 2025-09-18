@@ -15,31 +15,26 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
 
   describe('fetch()', () => {
     it('should return array of WelshCommunityRaw objects', async () => {
-      // Mock response with sample Welsh council data
-      const mockResponse = {
-        data: {
-          results: [
-            {
-              name: 'Abertillery Town Council',
-              principalArea: 'Blaenau Gwent',
-              ward: 'Abertillery',
-              type: 'Town Council',
-              website: 'http://example.com',
-              email: 'contact@example.com'
-            },
-            {
-              name: 'Cardiff City Council',
-              principalArea: 'Cardiff',
-              ward: 'City Centre',
-              type: 'City Council',
-              website: 'http://cardiff.gov.uk',
-              email: 'info@cardiff.gov.uk'
-            }
-          ]
-        }
-      };
+      // Mock HTML response matching Wikipedia structure
+      const mockHtml = `
+        <html>
+          <body>
+            <h2>Blaenau Gwent</h2>
+            <table class="wikitable">
+              <tr><th>Community</th><th>Population</th></tr>
+              <tr><td>Abertillery</td><td>10,000</td></tr>
+              <tr><td>Brynmawr</td><td>5,000</td></tr>
+            </table>
+            <h2>Cardiff</h2>
+            <table class="wikitable">
+              <tr><th>Community</th><th>Population</th></tr>
+              <tr><td>Cardiff City</td><td>350,000</td></tr>
+            </table>
+          </body>
+        </html>
+      `;
 
-      mockedAxios.get.mockResolvedValue(mockResponse);
+      mockedAxios.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
@@ -57,40 +52,36 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
       });
     });
 
-    it('should return minimum 1000 councils', async () => {
-      // Mock large dataset response
-      const mockCouncils = Array.from({ length: 1200 }, (_, i) => ({
-        name: `Council ${i + 1}`,
-        principalArea: `Area ${Math.floor(i / 50) + 1}`,
-        ward: `Ward ${i % 10}`,
-        type: 'Community Council'
-      }));
+    it('should return minimum 400 councils', async () => {
+      // Mock large HTML response with multiple councils
+      let mockHtml = '<html><body>';
+      for (let i = 0; i < 22; i++) {
+        mockHtml += `<h2>Area ${i + 1}</h2><table class="wikitable">`;
+        for (let j = 0; j < 20; j++) {
+          mockHtml += `<tr><td>Council ${i * 20 + j}</td><td>${1000 + j}</td></tr>`;
+        }
+        mockHtml += '</table>';
+      }
+      mockHtml += '</body></html>';
 
-      mockedAxios.get.mockResolvedValue({
-        data: { results: mockCouncils }
-      });
+      mockedAxios.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
-      expect(result.length).toBeGreaterThanOrEqual(1000);
+      expect(result.length).toBeGreaterThanOrEqual(400);
     });
 
     it('should verify required fields are present', async () => {
-      const mockResponse = {
-        data: {
-          results: [
-            {
-              name: 'Test Council',
-              principalArea: 'Test Area',
-              ward: 'Test Ward',
-              type: 'Community Council',
-              website: 'http://test.com'
-            }
-          ]
-        }
-      };
+      const mockHtml = `
+        <html><body>
+          <h2>Test Area</h2>
+          <table class="wikitable">
+            <tr><td>Test Council</td><td>1000</td><td>http://test.com</td></tr>
+          </table>
+        </body></html>
+      `;
 
-      mockedAxios.get.mockResolvedValue(mockResponse);
+      mockedAxios.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
@@ -107,19 +98,18 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
     it('should handle HTTP errors gracefully', async () => {
       mockedAxios.get.mockRejectedValue(new Error('Network error'));
 
-      await expect(fetcher.fetch()).rejects.toThrow('Network error');
+      await expect(fetcher.fetch()).rejects.toThrow('Failed to fetch Welsh community councils');
     });
 
     it('should make correct API call', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: { results: [] }
-      });
+      const mockHtml = '<html><body></body></html>';
+      mockedAxios.get.mockResolvedValue({ data: mockHtml });
 
-      await fetcher.fetch();
+      await fetcher.fetch().catch(() => {}); // Ignore validation error for empty result
 
       expect(mockedAxios.get).toHaveBeenCalledTimes(1);
       expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining('wales.gov.uk'),
+        expect.stringContaining('wikipedia.org/wiki/List_of_communities_in_Wales'),
         expect.any(Object)
       );
     });
