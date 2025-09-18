@@ -47,7 +47,7 @@ function createCli(): Command {
     .option('-o, --output <path>', 'Output file path', 'dist/orgs.json')
     .option('-l, --log-file <path>', 'Log to file in addition to console')
     .option('-q, --quiet', 'Suppress all output except errors', false)
-    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra, colleges-uk)')
+    .option('-s, --source <source>', 'Fetch specific source only (govuk, ons, nhs-provider-directory, defra-uk-air, police, fire, devolved-extra, colleges-uk, welsh-councils, scottish-councils, ni-health)')
     .action(async (options: CliOptions) => {
       await runAggregation(options);
     });
@@ -154,7 +154,8 @@ async function runAggregation(options: CliOptions): Promise<void> {
       debugMode: !!options.debug,
       timeout,
       outputPath,
-      logger
+      logger,
+      source: options.source
     };
     
     if (options.source) {

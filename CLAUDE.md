@@ -41,34 +41,33 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Replacing GIAS school data collection with CSV download:
-- Remove JSON scraping from schools-fetcher.ts (performance issues)
-- New GIAS CSV fetcher: Direct download from get-information-schools.service.gov.uk
-- Session management with cookies and CSRF tokens
-- ZIP extraction and CSV parsing (~52,000 schools)
-- Performance target: Under 30 seconds (vs 3-5 minutes current)
+Adding Welsh/Scottish Community Councils and NI Health Trusts:
+- Welsh Community Councils: ~1,100 from Wikipedia
+- Scottish Community Councils: ~1,200 from Wikipedia
+- NI Health and Social Care Trusts: 6 from NI Direct
+- HTML scraping with cheerio for all three sources
+- Performance target: Under 30 seconds total
 
 ## Key Files
-- `specs/011-i-have-found/spec.md` - GIAS CSV replacement specification
-- `specs/011-i-have-found/plan.md` - Implementation plan
-- `specs/011-i-have-found/contracts/` - Service contracts
-- `src/services/gias-csv-fetcher.ts` - GIAS CSV download service (NEW)
-- `src/services/schools-fetcher.ts` - JSON scraper to be REMOVED
-- `src/services/mappers/schools-mapper.ts` - Update for CSV fields
-- `test/gias.js` - Reference implementation for approach
+- `specs/012-welsh-community-councils/spec.md` - Feature specification
+- `specs/012-welsh-community-councils/plan.md` - Implementation plan
+- `specs/012-welsh-community-councils/contracts/` - Service contracts
+- `src/services/fetchers/welsh-councils-fetcher.ts` - Welsh councils (NEW)
+- `src/services/fetchers/scottish-councils-fetcher.ts` - Scottish councils (NEW)
+- `src/services/fetchers/ni-health-trusts-fetcher.ts` - NI Health Trusts (NEW)
+- `src/services/mappers/community-councils-mapper.ts` - Mapper for new types (NEW)
 
 ## Development Notes
-- Session cookie management for bot detection bypass
-- CSRF token extraction from HTML for form submission
-- ZIP file extraction using Node.js zlib
-- CSV parsing with streaming for memory efficiency
-- Retry logic with exponential backoff for resilience
+- Wikipedia page parsing with flexible selectors
+- Active/inactive status detection for Scottish councils
+- Optional detail page fetching for NI Health Trusts
+- Retry logic with exponential backoff for all sources
+- UTF-8 handling for Welsh and Scottish names
 
 ## Recent Changes
+- Branch 012-welsh-community-councils: Adding Welsh/Scottish councils and NI Health Trusts
 - Branch 011-i-have-found: Replacing GIAS JSON scraping with CSV download
 - Branch 010-you-can-discover: Added Groundwork Trusts and NHS Charities
-- Branch 009-english-courts-can: Added UK Courts and Tribunals (~863)
-- Branch 008-ni-schools-you: Added Northern Ireland Schools (~1122)
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

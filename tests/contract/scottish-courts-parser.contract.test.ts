@@ -161,7 +161,7 @@ describe('ScottishCourtsParser Contract', () => {
       // Act
       try {
         await parser.parse();
-      } catch (e) {
+      } catch {
         // Expected to throw
       }
 

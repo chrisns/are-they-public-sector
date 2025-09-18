@@ -45,6 +45,10 @@ import { GroundworkParser } from '../services/groundwork-parser.js';
 import { NHSCharitiesParser } from '../services/nhs-charities-parser.js';
 import { GroundworkMapper } from '../services/mappers/groundwork-mapper.js';
 import { NHSCharitiesMapper } from '../services/mappers/nhs-charities-mapper.js';
+import { WelshCouncilsFetcher } from '../services/fetchers/welsh-councils-fetcher.js';
+import { ScottishCouncilsFetcher } from '../services/fetchers/scottish-councils-fetcher.js';
+import { NIHealthTrustsFetcher } from '../services/fetchers/ni-health-trusts-fetcher.js';
+import { CommunityCouncilsMapper } from '../services/mappers/community-councils-mapper.js';
 
 // Import models
 import type { Organisation, DataSourceReference } from '../models/organisation.js';
@@ -959,6 +963,120 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch Welsh Community Councils data
+   */
+  async fetchWelshCouncilsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Welsh Community Councils');
+
+    try {
+      this.logger.startProgress('Fetching Welsh councils from Wikipedia...');
+
+      const fetcher = new WelshCouncilsFetcher();
+      const mapper = new CommunityCouncilsMapper();
+      const councils = await fetcher.fetch();
+      const organisations = mapper.mapWelshCouncils(councils);
+
+      this.logger.stopProgress(`Fetched ${councils.length} Welsh Community Councils`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'wikipedia.org',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Welsh councils fetch failed: ${message}`);
+      return {
+        success: false,
+        organisations: [],
+        error: error instanceof Error ? error : new Error(message),
+        metadata: { source: 'wikipedia.org', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
+   * Fetch Scottish Community Councils data
+   */
+  async fetchScottishCouncilsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching Scottish Community Councils');
+
+    try {
+      this.logger.startProgress('Fetching Scottish councils from Wikipedia...');
+
+      const fetcher = new ScottishCouncilsFetcher();
+      const mapper = new CommunityCouncilsMapper();
+      const councils = await fetcher.fetch();
+      const organisations = mapper.mapScottishCouncils(councils);
+
+      this.logger.stopProgress(`Fetched ${councils.length} active Scottish Community Councils`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'wikipedia.org',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Scottish councils fetch failed: ${message}`);
+      return {
+        success: false,
+        organisations: [],
+        error: error instanceof Error ? error : new Error(message),
+        metadata: { source: 'wikipedia.org', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
+   * Fetch NI Health and Social Care Trusts data
+   */
+  async fetchNIHealthTrustsData(): Promise<DataFetchResult> {
+    this.logger.subsection('Fetching NI Health and Social Care Trusts');
+
+    try {
+      this.logger.startProgress('Fetching NI Health Trusts from NI Direct...');
+
+      const fetcher = new NIHealthTrustsFetcher();
+      const mapper = new CommunityCouncilsMapper();
+      const trusts = await fetcher.fetch();
+      const organisations = mapper.mapNIHealthTrusts(trusts);
+
+      this.logger.stopProgress(`Fetched ${trusts.length} NI Health and Social Care Trusts`);
+      this.logger.success(`Mapped to ${organisations.length} organisations`);
+
+      return {
+        success: true,
+        organisations,
+        metadata: {
+          source: 'nidirect.gov.uk',
+          fetchedAt: new Date().toISOString(),
+          recordCount: organisations.length
+        }
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`NI Health Trusts fetch failed: ${message}`);
+      return {
+        success: false,
+        organisations: [],
+        error: error instanceof Error ? error : new Error(message),
+        metadata: { source: 'nidirect.gov.uk', fetchedAt: new Date().toISOString() }
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -1146,6 +1264,42 @@ export class Orchestrator {
           this.logger.success(`Added ${nhsCharitiesResult.organisations.length} NHS Charities`);
         } else {
           errors.push(nhsCharitiesResult.error || new Error('NHS Charities fetch failed'));
+        }
+      }
+
+      // Fetch Welsh Community Councils data
+      if (!sourceFilter || sourceFilter === 'welsh-councils' || sourceFilter === 'welsh-community') {
+        const welshResult = await this.fetchWelshCouncilsData();
+        if (welshResult.success && welshResult.organisations) {
+          allOrganisations.push(...welshResult.organisations);
+          sources.push('welsh-community-councils');
+          this.logger.success(`Added ${welshResult.organisations.length} Welsh Community Councils`);
+        } else {
+          errors.push(welshResult.error || new Error('Welsh councils fetch failed'));
+        }
+      }
+
+      // Fetch Scottish Community Councils data
+      if (!sourceFilter || sourceFilter === 'scottish-councils' || sourceFilter === 'scottish-community') {
+        const scottishResult = await this.fetchScottishCouncilsData();
+        if (scottishResult.success && scottishResult.organisations) {
+          allOrganisations.push(...scottishResult.organisations);
+          sources.push('scottish-community-councils');
+          this.logger.success(`Added ${scottishResult.organisations.length} Scottish Community Councils`);
+        } else {
+          errors.push(scottishResult.error || new Error('Scottish councils fetch failed'));
+        }
+      }
+
+      // Fetch NI Health and Social Care Trusts data
+      if (!sourceFilter || sourceFilter === 'ni-health' || sourceFilter === 'ni-trusts') {
+        const niHealthResult = await this.fetchNIHealthTrustsData();
+        if (niHealthResult.success && niHealthResult.organisations) {
+          allOrganisations.push(...niHealthResult.organisations);
+          sources.push('ni-health-trusts');
+          this.logger.success(`Added ${niHealthResult.organisations.length} NI Health and Social Care Trusts`);
+        } else {
+          errors.push(niHealthResult.error || new Error('NI Health Trusts fetch failed'));
         }
       }
 

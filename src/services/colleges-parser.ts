@@ -331,7 +331,7 @@ export class CollegesParser {
                    trimmed.length > 5 &&
                    trimmed.length < 100) {
             // Clean up the name - only take the college name, not region info
-            let name = trimmed;
+            const name = trimmed;
 
             // Don't add duplicates
             const alreadyExists = colleges.some(c =>

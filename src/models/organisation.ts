@@ -24,6 +24,9 @@ export enum OrganisationType {
   PUBLIC_BODY = 'public_body',
   EMERGENCY_SERVICE = 'emergency_service',
   JUDICIAL_BODY = 'judicial_body',
+  WELSH_COMMUNITY_COUNCIL = 'welsh_community_council',
+  SCOTTISH_COMMUNITY_COUNCIL = 'scottish_community_council',
+  NI_HEALTH_TRUST = 'ni_health_trust',
   OTHER = 'other'
 }
 
