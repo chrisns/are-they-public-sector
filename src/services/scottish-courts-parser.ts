@@ -11,7 +11,7 @@ import { CourtStatus, Jurisdiction } from '../models/court.js';
 export class ScottishCourtsParser {
   private lastError?: string;
   private readonly sitemapUrl = 'https://www.scotcourts.gov.uk/sitemap.xml';
-  private readonly courtUrlPattern = /courts-and-tribunals\/courts-tribunals-and-office-locations\/find-us\/([^<\/]+)$/;
+  private readonly courtUrlPattern = /courts-and-tribunals\/courts-tribunals-and-office-locations\/find-us\/([^</]+)$/;
 
   async parse(): Promise<ScottishCourtRaw[]> {
     return await this.fetchData();
