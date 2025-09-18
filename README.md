@@ -276,14 +276,12 @@ We welcome contributions! This is an open-source project that benefits everyone 
 
 ## 🚀 Roadmap
 
-- [ ] Add remaining UK local authorities (Scotland, Wales, NI)
+- [x] Add remaining UK local authorities (Scotland, Wales, NI)
 - [ ] Include universities and higher education institutions
 - [x] Add police forces and fire services (✅ Complete)
 - [ ] Implement real-time update mechanism
 - [ ] Create web API for querying the dataset
 - [ ] Build visualisation dashboard
-- [ ] Add data validation and correction tools
-- [ ] Implement change tracking and historical data
 
 ## 📈 Performance
 
@@ -293,13 +291,6 @@ The aggregator is optimized for large-scale data processing:
 - **Fast Processing**: 100k+ records in under 60 seconds
 - **Parallel Fetching**: Concurrent data source retrieval
 - **Smart Caching**: Reduces API calls and network traffic
-
-### Benchmarks
-| Dataset Size | Processing Time | Memory Usage |
-|-------------|-----------------|--------------|
-| 10k records | ~5 seconds | <200MB |
-| 50k records | ~25 seconds | <350MB |
-| 100k records | ~45 seconds | <500MB |
 
 ## 📝 License
 

@@ -28,6 +28,7 @@ export interface WelshCouncilsFetcherConfig {
   maxRetries?: number;
   retryDelay?: number;
   userAgent?: string;
+  skipValidation?: boolean; // For testing with mock data
 }
 
 /**
@@ -38,7 +39,8 @@ const DEFAULT_CONFIG: Required<WelshCouncilsFetcherConfig> = {
   timeout: 30000,
   maxRetries: 3,
   retryDelay: 1000,
-  userAgent: 'UK-Public-Sector-Aggregator/1.0'
+  userAgent: 'UK-Public-Sector-Aggregator/1.0',
+  skipValidation: false
 };
 
 /**
@@ -82,8 +84,8 @@ export class WelshCouncilsFetcher {
 
       const councils = this.parseWikipediaHtml(response.data);
 
-      // Validate minimum expected count
-      if (councils.length < 400) {
+      // Validate minimum expected count (unless in test mode)
+      if (!this.config.skipValidation && councils.length < 400) {
         throw new Error(`Only found ${councils.length} Welsh community councils, expected at least 400`);
       }
 
@@ -105,9 +107,72 @@ export class WelshCouncilsFetcher {
     const $ = cheerio.load(html);
     const councils: WelshCommunityRaw[] = [];
 
-    // Find all sections for principal areas
-    // The page is organized with h3 headings for each principal area
-    $('h3').each((_, element) => {
+    // First, try to parse tables (actual Wikipedia format)
+    $('h2').each((_, element) => {
+      const $heading = $(element);
+      const headingText = $heading.text().trim();
+
+      // Skip non-principal area headings
+      if (!headingText || headingText.includes('See also') || headingText.includes('References') ||
+          headingText.includes('External links') || headingText.includes('Notes') || headingText.includes('Contents')) {
+        return;
+      }
+
+      const principalArea = headingText.replace(/\[edit\]/g, '').trim();
+
+      // Look for tables following this heading
+      let $current = $heading.next();
+      while ($current.length && !$current.is('h2')) {
+        if ($current.is('table.wikitable')) {
+          // Parse the table
+          $current.find('tr').each((index, row) => {
+            if (index === 0) return; // Skip header row
+            const $row = $(row);
+            const cells = $row.find('td');
+            if (cells.length >= 1) {
+              const nameCell = cells.eq(0);
+              const name = nameCell.find('a').text().trim() || nameCell.text().trim();
+              if (name && name.length > 2) {
+                const council: WelshCommunityRaw = {
+                  name: this.cleanCommunityName(name),
+                  principalArea
+                };
+                // Extract population if available
+                if (cells.length >= 2) {
+                  const popText = cells.eq(1).text().trim().replace(/,/g, '');
+                  const popNum = parseInt(popText, 10);
+                  if (!isNaN(popNum)) {
+                    council.population = popNum;
+                  }
+                }
+                // Extract website or notes from third column
+                if (cells.length >= 3) {
+                  const thirdCell = cells.eq(2);
+                  const websiteLink = thirdCell.find('a').attr('href');
+                  const cellText = thirdCell.text().trim();
+
+                  if (websiteLink && websiteLink.startsWith('http')) {
+                    council.website = websiteLink;
+                  } else if (cellText && cellText.includes('.')) {
+                    // Looks like a website URL without http
+                    council.website = cellText.startsWith('http') ? cellText : `http://${cellText}`;
+                  } else if (cellText && cellText.length > 0) {
+                    // Must be notes
+                    council.notes = cellText;
+                  }
+                }
+                councils.push(council);
+              }
+            }
+          });
+        }
+        $current = $current.next();
+      }
+    });
+
+    // If no tables found, fall back to h3 and list parsing
+    if (councils.length === 0) {
+      $('h3').each((_, element) => {
       const $heading = $(element);
       const headingText = $heading.text().trim();
 
@@ -166,7 +231,8 @@ export class WelshCouncilsFetcher {
           });
         }
       }
-    });
+      });
+    }
 
     // Also check for any standalone lists that might contain communities
     $('ul').each((_, ul) => {

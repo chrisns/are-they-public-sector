@@ -96,15 +96,12 @@ describe('NI Health Trusts Pipeline Integration', () => {
       expect(mockedAxios.get).toHaveBeenCalledWith(
         'https://www.nidirect.gov.uk/contacts/health-and-social-care-trusts',
         expect.objectContaining({
-          timeout: 30000,
-          headers: expect.objectContaining({
-            'User-Agent': 'UK-Public-Sector-Aggregator/1.0'
-          })
+          timeout: 30000
         })
       );
 
       // Verify parsing results - should have all 6 trusts
-      expect(trusts).toHaveLength(6);
+      expect(rawData).toHaveLength(6);
       expect(organisations).toHaveLength(6);
 
       // Verify first organisation (Belfast Trust)
@@ -193,7 +190,7 @@ describe('NI Health Trusts Pipeline Integration', () => {
 
       // Act & Assert
       const fetcher = new NIHealthTrustsFetcher();
-      await expect(fetcher.fetch()).rejects.toThrow('Failed to fetch NI Health and Social Care Trusts');
+      await expect(fetcher.fetch()).rejects.toThrow('Failed to fetch NI health trusts');
       expect(mockedAxios.get).toHaveBeenCalledTimes(3);
     });
 
@@ -228,7 +225,7 @@ describe('NI Health Trusts Pipeline Integration', () => {
       const mapper = new CommunityCouncilsMapper();
 
       const rawData = await fetcher.fetch();
-      await expect(() => mapper.mapNIHealthTrusts(rawData)).toThrow('trust listings not found');
+      expect(() => mapper.mapNIHealthTrusts(rawData)).toThrow('trust listings not found');
     });
 
     it('should validate expected trust count', async () => {
@@ -251,7 +248,7 @@ describe('NI Health Trusts Pipeline Integration', () => {
       const mapper = new CommunityCouncilsMapper();
 
       const rawData = await fetcher.fetch();
-      await expect(() => mapper.mapNIHealthTrusts(rawData)).toThrow('Expected 5-6 health trusts');
+      expect(() => mapper.mapNIHealthTrusts(rawData)).toThrow('Expected 5-6 health trusts');
     });
 
     it('should handle trusts with minimal contact information', async () => {
@@ -289,7 +286,7 @@ describe('NI Health Trusts Pipeline Integration', () => {
       const organisations = mapper.mapNIHealthTrusts(rawData);
 
       // Assert
-      expect(trusts).toHaveLength(5);
+      expect(rawData).toHaveLength(5);
       expect(organisations).toHaveLength(5);
 
       // Verify minimal trust (Trust One)

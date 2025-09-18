@@ -49,18 +49,18 @@ export class CommunityCouncilsMapper {
       dataQuality: this.calculateDataQuality(council)
     };
 
-    // Add additional properties if available
-    if (council.population || council.website || council.notes) {
-      org.additionalProperties = {};
-      if (council.population) {
-        org.additionalProperties.population = council.population;
-      }
-      if (council.website) {
-        org.additionalProperties.website = council.website;
-      }
-      if (council.notes) {
-        org.additionalProperties.notes = council.notes;
-      }
+    // Add additional properties
+    org.additionalProperties = {
+      source: 'welsh-councils'
+    };
+    if (council.population) {
+      org.additionalProperties.population = council.population;
+    }
+    if (council.website) {
+      org.additionalProperties.website = council.website;
+    }
+    if (council.notes) {
+      org.additionalProperties.notes = council.notes;
     }
 
     return org;
@@ -107,16 +107,17 @@ export class CommunityCouncilsMapper {
       dataQuality: this.calculateDataQuality(council)
     };
 
-    // Add additional properties if available
-    if (council.region || council.contactDetails) {
-      org.additionalProperties = {};
-      if (council.region) {
-        org.additionalProperties.subRegion = council.region;
-      }
-      if (council.contactDetails) {
-        org.additionalProperties.contactDetails = council.contactDetails;
-      }
-      org.additionalProperties.isActive = council.isActive;
+    // Add additional properties
+    org.additionalProperties = {
+      source: 'scottish-councils',
+      councilArea: council.councilArea,
+      isActive: council.isActive
+    };
+    if (council.region) {
+      org.additionalProperties.subRegion = council.region;
+    }
+    if (council.contactDetails) {
+      org.additionalProperties.contactDetails = council.contactDetails;
     }
 
     return org;
@@ -165,22 +166,21 @@ export class CommunityCouncilsMapper {
       org.location!.address = trust.address;
     }
 
-    // Add additional properties if available
-    const hasAdditionalData = trust.phone || trust.email || trust.website || trust.servicesProvided;
-    if (hasAdditionalData) {
-      org.additionalProperties = {};
-      if (trust.phone) {
-        org.additionalProperties.phone = trust.phone;
-      }
-      if (trust.email) {
-        org.additionalProperties.email = trust.email;
-      }
-      if (trust.website) {
-        org.additionalProperties.website = trust.website;
-      }
-      if (trust.servicesProvided && trust.servicesProvided.length > 0) {
-        org.additionalProperties.servicesProvided = trust.servicesProvided;
-      }
+    // Add additional properties
+    org.additionalProperties = {
+      source: 'ni-health-trusts'
+    };
+    if (trust.phone) {
+      org.additionalProperties.phone = trust.phone;
+    }
+    if (trust.email) {
+      org.additionalProperties.email = trust.email;
+    }
+    if (trust.website) {
+      org.additionalProperties.website = trust.website;
+    }
+    if (trust.servicesProvided && trust.servicesProvided.length > 0) {
+      org.additionalProperties.servicesProvided = trust.servicesProvided;
     }
 
     return org;

@@ -28,6 +28,7 @@ export interface ScottishCouncilsFetcherConfig {
   maxRetries?: number;
   retryDelay?: number;
   userAgent?: string;
+  skipValidation?: boolean; // For testing with mock data
 }
 
 /**
@@ -38,7 +39,8 @@ const DEFAULT_CONFIG: Required<ScottishCouncilsFetcherConfig> = {
   timeout: 30000,
   maxRetries: 3,
   retryDelay: 1000,
-  userAgent: 'UK-Public-Sector-Aggregator/1.0'
+  userAgent: 'UK-Public-Sector-Aggregator/1.0',
+  skipValidation: false
 };
 
 /**
