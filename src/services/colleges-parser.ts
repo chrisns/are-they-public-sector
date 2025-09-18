@@ -102,7 +102,7 @@ export class CollegesParser {
     return this.retryWithBackoff(async () => {
       try {
         const response = await axios.get(this.AOC_URL, {
-          timeout: 10000,
+          timeout: 30000, // Increased timeout to 30 seconds
           headers: {
             'User-Agent': 'Mozilla/5.0 (compatible; UK-Public-Sector-Aggregator/1.0)'
           }

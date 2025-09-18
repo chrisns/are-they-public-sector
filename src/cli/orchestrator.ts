@@ -1382,14 +1382,14 @@ export class Orchestrator {
           return err.message.split(':')[0].trim();
         });
 
-        this.logger.error(`CRITICAL: ${errors.length} data source(s) failed:`);
+        this.logger.warn(`WARNING: ${errors.length} data source(s) failed:`);
         failedSourceDetails.forEach((source, i) => {
-          this.logger.error(`  • ${source}: ${errors[i].message}`);
+          this.logger.warn(`  • ${source}: ${errors[i].message}`);
         });
       }
 
       return {
-        success: hasData && errors.length === 0,  // Only succeed if we have data AND no errors
+        success: hasData,  // Succeed if we have ANY data, even if some sources failed
         sources,
         organisations: dedupResult.organisations,
         totalRecords: dedupResult.organisations.length,
