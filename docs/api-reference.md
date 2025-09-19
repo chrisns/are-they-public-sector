@@ -383,7 +383,7 @@ const mapping: FieldMapping = {
 
 The completeness score is calculated as:
 
-```
+```text
 completeness = (populated_fields / total_fields) * weight_factor
 ```
 
