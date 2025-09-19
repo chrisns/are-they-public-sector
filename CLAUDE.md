@@ -41,33 +41,38 @@ tests/
 - Use real dependencies, mock external APIs
 
 ## Current Feature
-Adding Welsh/Scottish Community Councils and NI Health Trusts:
-- Welsh Community Councils: ~1,100 from Wikipedia
-- Scottish Community Councils: ~1,200 from Wikipedia
-- NI Health and Social Care Trusts: 6 from NI Direct
-- HTML scraping with cheerio for all three sources
-- Performance target: Under 30 seconds total
+Adding UK Government Organisation Data Sources (12 sources):
+- English Unitary Authorities: Dynamic CSV from ONS
+- Districts of England: ~164 from Wikipedia
+- Welsh Unitary Authorities: 22 from Law.gov.wales
+- Scottish orgs: MyGov.scot directory
+- Health: ICBs, Health Boards, Local Healthwatch (paginated)
+- Transport: Scottish RTPs, NI Trust Ports
+- Other: Research Councils, National Parks, NI Departments
 
 ## Key Files
-- `specs/012-welsh-community-councils/spec.md` - Feature specification
-- `specs/012-welsh-community-councils/plan.md` - Implementation plan
-- `specs/012-welsh-community-councils/contracts/` - Service contracts
-- `src/services/fetchers/welsh-councils-fetcher.ts` - Welsh councils (NEW)
-- `src/services/fetchers/scottish-councils-fetcher.ts` - Scottish councils (NEW)
-- `src/services/fetchers/ni-health-trusts-fetcher.ts` - NI Health Trusts (NEW)
-- `src/services/mappers/community-councils-mapper.ts` - Mapper for new types (NEW)
+- `specs/013-unitary-authorities-england/` - Current feature specs
+- `src/services/fetchers/` - 12 new fetcher services (NEW)
+  - english-unitary-authorities-fetcher.ts
+  - districts-of-england-fetcher.ts
+  - local-healthwatch-fetcher.ts (paginated)
+  - Plus 9 other source fetchers
+- `src/services/mappers/` - Type-specific mappers (NEW)
+- `src/cli/orchestrator.ts` - Update to include new sources
 
 ## Development Notes
-- Wikipedia page parsing with flexible selectors
-- Active/inactive status detection for Scottish councils
-- Optional detail page fetching for NI Health Trusts
-- Retry logic with exponential backoff for all sources
-- UTF-8 handling for Welsh and Scottish names
+- Dynamic CSV link extraction from ONS page
+- Pagination handling for Healthwatch (iterate all pages)
+- HTML scraping with cheerio for 11 sources
+- CSV parsing for ONS data
+- Retry logic with exponential backoff
+- UTF-8 handling for special characters
+- Deduplication across multiple sources
 
 ## Recent Changes
-- Branch 012-welsh-community-councils: Adding Welsh/Scottish councils and NI Health Trusts
-- Branch 011-i-have-found: Replacing GIAS JSON scraping with CSV download
-- Branch 010-you-can-discover: Added Groundwork Trusts and NHS Charities
+- Branch 013-unitary-authorities-england: Adding 12 UK gov data sources
+- Branch 012-welsh-community-councils: Welsh/Scottish councils and NI Health Trusts
+- Branch 011-i-have-found: GIAS CSV download replacement
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

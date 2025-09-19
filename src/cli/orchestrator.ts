@@ -48,7 +48,30 @@ import { NHSCharitiesMapper } from '../services/mappers/nhs-charities-mapper.js'
 import { WelshCouncilsFetcher } from '../services/fetchers/welsh-councils-fetcher.js';
 import { ScottishCouncilsFetcher } from '../services/fetchers/scottish-councils-fetcher.js';
 import { NIHealthTrustsFetcher } from '../services/fetchers/ni-health-trusts-fetcher.js';
+
+// New UK Gov Organisation Data Source fetchers
+import { EnglishUnitaryAuthoritiesFetcher } from '../services/fetchers/english-unitary-authorities-fetcher.js';
+import { DistrictsOfEnglandFetcher } from '../services/fetchers/districts-of-england-fetcher.js';
+import { NationalParkAuthoritiesFetcher } from '../services/fetchers/national-park-authorities-fetcher.js';
+import { IntegratedCareBoardsFetcher } from '../services/fetchers/integrated-care-boards-fetcher.js';
+import { LocalHealthwatchFetcher } from '../services/fetchers/local-healthwatch-fetcher.js';
+import { ScottishGovernmentOrgsFetcher } from '../services/fetchers/scottish-government-orgs-fetcher.js';
+import { NHSScotlandBoardsFetcher } from '../services/fetchers/nhs-scotland-boards-fetcher.js';
+import { ScottishRTPsFetcher } from '../services/fetchers/scottish-rtps-fetcher.js';
+import { WelshUnitaryAuthoritiesFetcher } from '../services/fetchers/welsh-unitary-authorities-fetcher.js';
+import { NITrustPortsFetcher } from '../services/fetchers/ni-trust-ports-fetcher.js';
+import { NIGovernmentDeptsFetcher } from '../services/fetchers/ni-government-depts-fetcher.js';
+import { UKResearchCouncilsFetcher } from '../services/fetchers/uk-research-councils-fetcher.js';
+
+// New mappers for UK Gov Organisation Data Sources
+import { UnitaryAuthorityMapper } from '../services/mappers/unitary-authority-mapper.js';
+import { DistrictCouncilMapper } from '../services/mappers/district-council-mapper.js';
+import { HealthOrganisationMapper } from '../services/mappers/health-organisation-mapper.js';
+import { TransportPartnershipMapper } from '../services/mappers/transport-partnership-mapper.js';
+import { ResearchCouncilMapper } from '../services/mappers/research-council-mapper.js';
+import { GovernmentDepartmentMapper } from '../services/mappers/government-department-mapper.js';
 import { CommunityCouncilsMapper } from '../services/mappers/community-councils-mapper.js';
+import { NationalParkMapper } from '../services/mappers/national-park-mapper.js';
 
 // Import models
 import type { Organisation, DataSourceReference } from '../models/organisation.js';
@@ -1077,6 +1100,522 @@ export class Orchestrator {
   }
 
   /**
+   * Fetch English Unitary Authorities data
+   */
+  private async fetchEnglishUnitaryAuthorities(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new EnglishUnitaryAuthoritiesFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new UnitaryAuthorityMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'ons-unitary-authorities',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'ons-unitary-authorities',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch English Unitary Authorities data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'ons-unitary-authorities',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Districts of England data
+   */
+  private async fetchDistrictsOfEngland(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new DistrictsOfEnglandFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new DistrictCouncilMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'wikipedia-districts',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'wikipedia-districts',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Districts of England data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'wikipedia-districts',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch National Park Authorities data
+   */
+  private async fetchNationalParks(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new NationalParkAuthoritiesFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new NationalParkMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'national-parks',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'national-parks',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch National Park Authorities data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'national-parks',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Integrated Care Boards data
+   */
+  private async fetchIntegratedCareBoards(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new IntegratedCareBoardsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new HealthOrganisationMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'nhs-icbs',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'nhs-icbs',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Integrated Care Boards data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'nhs-icbs',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Local Healthwatch data
+   */
+  private async fetchLocalHealthwatch(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new LocalHealthwatchFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new HealthOrganisationMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'local-healthwatch',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'local-healthwatch',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Local Healthwatch data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'local-healthwatch',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Scottish Government Organisations data
+   */
+  private async fetchScottishGovernmentOrgs(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new ScottishGovernmentOrgsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new GovernmentDepartmentMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'scottish-government',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'scottish-government',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Scottish Government Organisations data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'scottish-government',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch NHS Scotland Boards data
+   */
+  private async fetchNHSScotlandBoards(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new NHSScotlandBoardsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new HealthOrganisationMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'nhs-scotland-boards',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'nhs-scotland-boards',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch NHS Scotland Boards data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'nhs-scotland-boards',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Scottish Regional Transport Partnerships data
+   */
+  private async fetchScottishRTPs(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new ScottishRTPsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new TransportPartnershipMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'scottish-rtps',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'scottish-rtps',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Scottish RTPs data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'scottish-rtps',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch Welsh Unitary Authorities data
+   */
+  private async fetchWelshUnitaryAuthorities(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new WelshUnitaryAuthoritiesFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new UnitaryAuthorityMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'welsh-unitary-authorities',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'welsh-unitary-authorities',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch Welsh Unitary Authorities data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'welsh-unitary-authorities',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch NI Trust Ports data
+   */
+  private async fetchNITrustPorts(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new NITrustPortsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new TransportPartnershipMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'ni-trust-ports',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'ni-trust-ports',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch NI Trust Ports data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'ni-trust-ports',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch NI Government Departments data
+   */
+  private async fetchNIGovernmentDepts(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new NIGovernmentDeptsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new GovernmentDepartmentMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'ni-government-depts',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'ni-government-depts',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch NI Government Departments data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'ni-government-depts',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
+   * Fetch UK Research Councils data
+   */
+  private async fetchUKResearchCouncils(): Promise<DataFetchResult> {
+    try {
+      const fetcher = new UKResearchCouncilsFetcher();
+      const result = await fetcher.fetch();
+
+      if (result.success && result.data) {
+        const mapper = new ResearchCouncilMapper();
+        const organisations = mapper.mapMany(result.data, result.source);
+
+        return {
+          success: true,
+          organisations,
+          metadata: {
+            source: 'uk-research-councils',
+            fetchedAt: new Date().toISOString(),
+            totalRecords: organisations.length
+          }
+        };
+      }
+
+      return {
+        success: false,
+        metadata: {
+          source: 'uk-research-councils',
+          fetchedAt: new Date().toISOString()
+        },
+        error: new Error(result.error || 'Failed to fetch UK Research Councils data')
+      };
+    } catch (error) {
+      return {
+        success: false,
+        metadata: {
+          source: 'uk-research-councils',
+          fetchedAt: new Date().toISOString()
+        },
+        error: error instanceof Error ? error : new Error('Unknown error')
+      };
+    }
+  }
+
+  /**
    * Perform complete aggregation from all sources
    */
   async performCompleteAggregation(): Promise<AggregationResult> {
@@ -1303,6 +1842,152 @@ export class Orchestrator {
         }
       }
 
+      // NEW UK GOV ORGANISATION DATA SOURCES
+
+      // Fetch English Unitary Authorities
+      if (!sourceFilter || sourceFilter === 'english-unitary' || sourceFilter === 'ons-unitary') {
+        const unitaryResult = await this.fetchEnglishUnitaryAuthorities();
+        if (unitaryResult.success && unitaryResult.organisations) {
+          allOrganisations.push(...unitaryResult.organisations);
+          sources.push('ons-unitary-authorities');
+          this.logger.success(`Added ${unitaryResult.organisations.length} English Unitary Authorities`);
+        } else {
+          errors.push(unitaryResult.error || new Error('English Unitary Authorities fetch failed'));
+        }
+      }
+
+      // Fetch Districts of England
+      if (!sourceFilter || sourceFilter === 'districts' || sourceFilter === 'english-districts') {
+        const districtsResult = await this.fetchDistrictsOfEngland();
+        if (districtsResult.success && districtsResult.organisations) {
+          allOrganisations.push(...districtsResult.organisations);
+          sources.push('wikipedia-districts');
+          this.logger.success(`Added ${districtsResult.organisations.length} English Districts`);
+        } else {
+          errors.push(districtsResult.error || new Error('Districts of England fetch failed'));
+        }
+      }
+
+      // Fetch National Park Authorities
+      if (!sourceFilter || sourceFilter === 'national-parks' || sourceFilter === 'parks') {
+        const parksResult = await this.fetchNationalParks();
+        if (parksResult.success && parksResult.organisations) {
+          allOrganisations.push(...parksResult.organisations);
+          sources.push('national-parks');
+          this.logger.success(`Added ${parksResult.organisations.length} National Park Authorities`);
+        } else {
+          errors.push(parksResult.error || new Error('National Parks fetch failed'));
+        }
+      }
+
+      // Fetch Integrated Care Boards
+      if (!sourceFilter || sourceFilter === 'icbs' || sourceFilter === 'integrated-care') {
+        const icbResult = await this.fetchIntegratedCareBoards();
+        if (icbResult.success && icbResult.organisations) {
+          allOrganisations.push(...icbResult.organisations);
+          sources.push('nhs-icbs');
+          this.logger.success(`Added ${icbResult.organisations.length} Integrated Care Boards`);
+        } else {
+          errors.push(icbResult.error || new Error('ICBs fetch failed'));
+        }
+      }
+
+      // Fetch Local Healthwatch
+      if (!sourceFilter || sourceFilter === 'healthwatch' || sourceFilter === 'local-healthwatch') {
+        const healthwatchResult = await this.fetchLocalHealthwatch();
+        if (healthwatchResult.success && healthwatchResult.organisations) {
+          allOrganisations.push(...healthwatchResult.organisations);
+          sources.push('local-healthwatch');
+          this.logger.success(`Added ${healthwatchResult.organisations.length} Local Healthwatch organisations`);
+        } else {
+          errors.push(healthwatchResult.error || new Error('Local Healthwatch fetch failed'));
+        }
+      }
+
+      // Fetch Scottish Government Organisations
+      if (!sourceFilter || sourceFilter === 'scottish-gov' || sourceFilter === 'mygov-scot') {
+        const scotGovResult = await this.fetchScottishGovernmentOrgs();
+        if (scotGovResult.success && scotGovResult.organisations) {
+          allOrganisations.push(...scotGovResult.organisations);
+          sources.push('scottish-government');
+          this.logger.success(`Added ${scotGovResult.organisations.length} Scottish Government organisations`);
+        } else {
+          errors.push(scotGovResult.error || new Error('Scottish Gov orgs fetch failed'));
+        }
+      }
+
+      // Fetch NHS Scotland Health Boards
+      if (!sourceFilter || sourceFilter === 'nhs-scotland' || sourceFilter === 'scottish-health') {
+        const nhsScotResult = await this.fetchNHSScotlandBoards();
+        if (nhsScotResult.success && nhsScotResult.organisations) {
+          allOrganisations.push(...nhsScotResult.organisations);
+          sources.push('nhs-scotland-boards');
+          this.logger.success(`Added ${nhsScotResult.organisations.length} NHS Scotland Health Boards`);
+        } else {
+          errors.push(nhsScotResult.error || new Error('NHS Scotland boards fetch failed'));
+        }
+      }
+
+      // Fetch Scottish Regional Transport Partnerships
+      if (!sourceFilter || sourceFilter === 'scottish-rtps' || sourceFilter === 'rtps') {
+        const rtpResult = await this.fetchScottishRTPs();
+        if (rtpResult.success && rtpResult.organisations) {
+          allOrganisations.push(...rtpResult.organisations);
+          sources.push('scottish-rtps');
+          this.logger.success(`Added ${rtpResult.organisations.length} Scottish Regional Transport Partnerships`);
+        } else {
+          errors.push(rtpResult.error || new Error('Scottish RTPs fetch failed'));
+        }
+      }
+
+      // Fetch Welsh Unitary Authorities
+      if (!sourceFilter || sourceFilter === 'welsh-unitary' || sourceFilter === 'welsh-authorities') {
+        const welshUnitaryResult = await this.fetchWelshUnitaryAuthorities();
+        if (welshUnitaryResult.success && welshUnitaryResult.organisations) {
+          allOrganisations.push(...welshUnitaryResult.organisations);
+          sources.push('welsh-unitary-authorities');
+          this.logger.success(`Added ${welshUnitaryResult.organisations.length} Welsh Unitary Authorities`);
+        } else {
+          errors.push(welshUnitaryResult.error || new Error('Welsh Unitary Authorities fetch failed'));
+        }
+      }
+
+      // Fetch NI Trust Ports
+      if (!sourceFilter || sourceFilter === 'ni-ports' || sourceFilter === 'trust-ports') {
+        const portsResult = await this.fetchNITrustPorts();
+        if (portsResult.success && portsResult.organisations) {
+          allOrganisations.push(...portsResult.organisations);
+          sources.push('ni-trust-ports');
+          this.logger.success(`Added ${portsResult.organisations.length} NI Trust Ports`);
+        } else {
+          errors.push(portsResult.error || new Error('NI Trust Ports fetch failed'));
+        }
+      }
+
+      // Fetch NI Government Departments
+      if (!sourceFilter || sourceFilter === 'ni-depts' || sourceFilter === 'ni-departments') {
+        const niDeptsResult = await this.fetchNIGovernmentDepts();
+        if (niDeptsResult.success && niDeptsResult.organisations) {
+          allOrganisations.push(...niDeptsResult.organisations);
+          sources.push('ni-government-depts');
+          this.logger.success(`Added ${niDeptsResult.organisations.length} NI Government Departments`);
+        } else {
+          errors.push(niDeptsResult.error || new Error('NI Government Depts fetch failed'));
+        }
+      }
+
+      // Fetch UK Research Councils
+      if (!sourceFilter || sourceFilter === 'research-councils' || sourceFilter === 'ukri') {
+        const ukriResult = await this.fetchUKResearchCouncils();
+        if (ukriResult.success && ukriResult.organisations) {
+          allOrganisations.push(...ukriResult.organisations);
+          sources.push('uk-research-councils');
+          this.logger.success(`Added ${ukriResult.organisations.length} UK Research Councils`);
+        } else {
+          errors.push(ukriResult.error || new Error('UK Research Councils fetch failed'));
+        }
+      }
+
       // Track memory after fetching
       this.trackMemory();
 
@@ -1398,8 +2083,7 @@ export class Orchestrator {
           memoryUsed: process.memoryUsage().heapUsed,
           peakMemoryMB: this.peakMemory
         },
-        ...(errors.length > 0 && { partialFailures: errors }),
-        failureCount: errors.length
+        ...(errors.length > 0 && { partialFailures: errors })
       };
     } catch (error) {
       this.logger.error('Aggregation failed', error);

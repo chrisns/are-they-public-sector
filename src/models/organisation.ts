@@ -27,7 +27,29 @@ export enum OrganisationType {
   WELSH_COMMUNITY_COUNCIL = 'welsh_community_council',
   SCOTTISH_COMMUNITY_COUNCIL = 'scottish_community_council',
   NI_HEALTH_TRUST = 'ni_health_trust',
+  // New types for UK Gov Organisation Data Sources
+  UNITARY_AUTHORITY = 'unitary_authority',
+  DISTRICT_COUNCIL = 'district_council',
+  HEALTH_BOARD = 'health_board',
+  INTEGRATED_CARE_BOARD = 'integrated_care_board',
+  LOCAL_HEALTHWATCH = 'local_healthwatch',
+  REGIONAL_TRANSPORT_PARTNERSHIP = 'regional_transport_partnership',
+  TRUST_PORT = 'trust_port',
+  RESEARCH_COUNCIL = 'research_council',
+  NATIONAL_PARK_AUTHORITY = 'national_park_authority',
+  GOVERNMENT_DEPARTMENT = 'government_department',
   OTHER = 'other'
+}
+
+/**
+ * Enumeration of UK regions
+ */
+export enum Region {
+  ENGLAND = 'England',
+  SCOTLAND = 'Scotland',
+  WALES = 'Wales',
+  NORTHERN_IRELAND = 'Northern Ireland',
+  UK_WIDE = 'UK'
 }
 
 /**
@@ -83,32 +105,34 @@ export interface OrganisationLocation {
 export interface Organisation {
   // Unique identifier (generated)
   id: string;
-  
+
   // Core fields (mapped from sources)
   name: string;
   alternativeNames?: string[];
   type: OrganisationType;
+  subType?: string;              // More specific categorisation
   classification: string;
-  
+
   // Hierarchical relationships
   parentOrganisation?: string;  // ID reference
   controllingUnit?: string;      // From "Sponsoring Entity"
-  
+
   // Status and lifecycle
   status: 'active' | 'inactive' | 'dissolved';
   establishmentDate?: string;    // ISO date
   dissolutionDate?: string;      // ISO date
-  
+
   // Location
   location?: OrganisationLocation;
-  
+  region?: Region;               // UK region classification
+
   // Source tracking
   sources: DataSourceReference[];
-  
+
   // Metadata
   lastUpdated: string;           // ISO datetime
   dataQuality: DataQuality;
-  
+
   // Unmapped fields preservation
   additionalProperties?: Record<string, unknown>;
 }
