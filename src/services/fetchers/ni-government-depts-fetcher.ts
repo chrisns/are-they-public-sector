@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class NIGovernmentDeptsFetcher {
   public readonly source = DataSource.NI_GOVERNMENT;
-  public readonly url = 'https://www.nidirect.gov.uk/government-departments-northern-ireland';
+  public readonly url = 'https://www.nidirect.gov.uk/contacts/government-departments-in-northern-ireland';
 
   async fetch(): Promise<FetcherResponse<GovernmentDepartmentData>> {
     try {
@@ -310,6 +310,10 @@ export class NIGovernmentDeptsFetcher {
         const delay = DEFAULT_RETRY_CONFIG.backoffMs[attempt];
         await new Promise(resolve => setTimeout(resolve, delay));
         return this.fetchWithRetry(url, attempt + 1);
+      }
+      // Add source context to error
+      if (axios.isAxiosError(error)) {
+        throw new Error(`Failed to fetch NI Government Departments from ${url}: ${error.message}`);
       }
       throw error;
     }
