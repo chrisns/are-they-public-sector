@@ -7,10 +7,10 @@ import { ScottishRTPsFetcher } from '../../src/services/fetchers/scottish-rtps-f
 import { DataSource } from '../../src/models/data-source';
 import { TransportPartnershipData } from '../../src/models/source-data';
 
-// Skip these tests in CI as they require network access to Transport Scotland
-const describeIfNotCI = process.env.CI ? describe.skip : describe;
+// Skip these tests in CI/local as they require network access to Transport Scotland
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
 
-describeIfNotCI('ScottishRTPsFetcher Contract', () => {
+describeIfNetwork('ScottishRTPsFetcher Contract', () => {
   let fetcher: ScottishRTPsFetcher;
 
   beforeEach(() => {
