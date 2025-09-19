@@ -2,7 +2,9 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import { DevolvedAdminParser } from '../../src/services/devolved-admin-parser.js';
 import { DevolvedNation } from '../../src/models/devolved-admin.js';
 
-describe('DevolvedAdminParser Contract Tests', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('DevolvedAdminParser Contract Tests', () => {
   let parser: DevolvedAdminParser;
 
   beforeEach(() => {

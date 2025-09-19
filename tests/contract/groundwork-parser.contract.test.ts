@@ -5,7 +5,9 @@
 
 import { GroundworkParser } from '../../src/services/groundwork-parser';
 
-describe('GroundworkParser Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('GroundworkParser Contract', () => {
   let parser: GroundworkParser;
 
   beforeEach(() => {

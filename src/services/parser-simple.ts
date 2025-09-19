@@ -61,7 +61,7 @@ export class SimpleParserService {
   /**
    * Parse ONS Excel file - simplified for actual structure
    */
-  parseOnsExcel(filePath: string): {
+  parseOnsExcel(fileData: string | Buffer): {
     success: boolean;
     data?: {
       institutional: Record<string, unknown>[];
@@ -72,11 +72,18 @@ export class SimpleParserService {
     metadata?: Record<string, unknown>;
   } {
     try {
-      if (!fs.existsSync(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
+      // Handle both file path (for tests) and buffer (for production)
+      let workbook: XLSX.WorkBook;
+      if (typeof fileData === 'string') {
+        // File path - for backward compatibility with tests
+        if (!fs.existsSync(fileData)) {
+          throw new Error(`File not found: ${fileData}`);
+        }
+        workbook = XLSX.readFile(fileData);
+      } else {
+        // Buffer - for production use
+        workbook = XLSX.read(fileData, { type: 'buffer' });
       }
-
-      const workbook = XLSX.readFile(filePath);
       console.log(`ONS Excel has ${workbook.SheetNames.length} sheets`);
       
       // Collect all organizations from relevant sheets

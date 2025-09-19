@@ -5,7 +5,9 @@
 import { ScottishCourtsParser } from '../../src/services/scottish-courts-parser';
 import { CourtsMapper } from '../../src/services/mappers/courts-mapper';
 
-describe('Scottish Courts Integration', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Scottish Courts Integration', () => {
   let parser: ScottishCourtsParser;
   let mapper: CourtsMapper;
 

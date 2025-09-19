@@ -5,8 +5,6 @@
 
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import * as fs from 'fs';
-import * as path from 'path';
 import { DataSourceType } from '../models/organisation.js';
 
 /**
@@ -187,11 +185,11 @@ export class FetcherService {
    * @param outputPath Path where to save the file
    * @returns FetchResult containing file path or error
    */
-  async downloadOnsExcel(url?: string, outputPath?: string): Promise<FetchResult> {
+  async downloadOnsExcel(url?: string): Promise<FetchResult> {
     try {
       // If URL not provided, try to scrape it
       const excelUrl = url || await this.scrapeOnsExcelLink();
-      
+
       if (!excelUrl) {
         return {
           success: false,
@@ -200,33 +198,18 @@ export class FetcherService {
           retrievedAt: new Date().toISOString()
         };
       }
-      
-      // Determine output path
-      const filePath = outputPath || path.join(
-        process.cwd(),
-        'data',
-        `ons_classification_${Date.now()}.xlsx`
-      );
-      
-      // Ensure directory exists
-      const dir = path.dirname(filePath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      
-      // Download file
-      const response = await this.retryRequest(() => 
+
+      // Download file into memory
+      const response = await this.retryRequest(() =>
         this.axiosInstance.get(excelUrl, {
           responseType: 'arraybuffer'
         })
       );
-      
-      // Save file
-      fs.writeFileSync(filePath, response.data);
-      
+
+      // Return the buffer directly
       return {
         success: true,
-        data: { filePath, url: excelUrl },
+        data: { buffer: response.data, url: excelUrl },
         source: DataSourceType.ONS_INSTITUTIONAL,
         retrievedAt: new Date().toISOString(),
         url: excelUrl

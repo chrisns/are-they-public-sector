@@ -8,7 +8,9 @@ import { ScottishCourtsParser } from '../../src/services/scottish-courts-parser'
 import { CourtsMapper } from '../../src/services/mappers/courts-mapper';
 import type { Organisation } from '../../src/models/organisation';
 
-describe('Full Courts Integration', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Full Courts Integration', () => {
   let englishParser: EnglishCourtsParser;
   let niParser: NICourtsParser;
   let scottishParser: ScottishCourtsParser;

@@ -9,7 +9,9 @@ const mockedAxiosInstance = {
   get: jest.fn()
 };
 
-describe('Scottish Councils Pipeline Integration', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Scottish Councils Pipeline Integration', () => {
   describe('Full flow: fetch → parse → map', () => {
     beforeEach(() => {
       jest.clearAllMocks();

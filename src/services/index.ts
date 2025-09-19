@@ -7,9 +7,6 @@
 export { FetcherService, createFetcher } from './fetcher.js';
 export type { FetcherConfig, FetchResult } from './fetcher.js';
 
-export { DeduplicatorService, createDeduplicator } from './deduplicator.js';
-export type { DeduplicatorConfig } from './deduplicator.js';
-
 // Re-export writer from lib
 export { WriterService, createWriter, writeOrganisations, writeResult } from '../lib/writer.js';
 export type { WriterConfig, OutputData, OutputSummary } from '../lib/writer.js';

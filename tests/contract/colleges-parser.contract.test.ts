@@ -10,7 +10,10 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('CollegesParser Contract', () => {
+// Skip these tests in CI/local as they require network access
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('CollegesParser Contract', () => {
   let parser: CollegesParser;
 
   beforeEach(() => {

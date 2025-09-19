@@ -9,7 +9,10 @@ import axios from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 
-describe('Colleges Aggregation Integration', () => {
+// Skip these tests in CI/local as they require network access
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Colleges Aggregation Integration', () => {
   let parser: CollegesParser;
   let mapper: CollegesMapper;
 

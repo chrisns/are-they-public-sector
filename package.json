@@ -9,9 +9,7 @@
     "test": "jest",
     "coverage": "jest --coverage",
     "lint": "eslint --exit-on-fatal-error",
-    "build": "tsc",
-    "dev": "tsx watch src/cli/index.ts",
-    "start": "node dist/index.js",
+    "start": "run compile",
     "test:watch": "jest --watch"
   },
   "engines": {
