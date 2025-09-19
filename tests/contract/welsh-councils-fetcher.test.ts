@@ -7,8 +7,21 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('WelshCouncilsFetcher Contract Tests', () => {
   let fetcher: WelshCouncilsFetcher;
+  let mockAxiosInstance: any;
 
   beforeEach(() => {
+    // Create a mock axios instance
+    mockAxiosInstance = {
+      get: jest.fn(),
+      post: jest.fn(),
+      put: jest.fn(),
+      delete: jest.fn(),
+      patch: jest.fn()
+    };
+
+    // Mock axios.create to return our mock instance
+    mockedAxios.create = jest.fn(() => mockAxiosInstance);
+
     fetcher = new WelshCouncilsFetcher();
     jest.clearAllMocks();
   });
@@ -34,7 +47,7 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
         </html>
       `;
 
-      mockedAxios.get.mockResolvedValue({ data: mockHtml });
+      mockAxiosInstance.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
@@ -64,7 +77,7 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
       }
       mockHtml += '</body></html>';
 
-      mockedAxios.get.mockResolvedValue({ data: mockHtml });
+      mockAxiosInstance.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
@@ -81,7 +94,7 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
         </body></html>
       `;
 
-      mockedAxios.get.mockResolvedValue({ data: mockHtml });
+      mockAxiosInstance.get.mockResolvedValue({ data: mockHtml });
 
       const result = await fetcher.fetch();
 
@@ -103,7 +116,7 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
 
     it('should make correct API call', async () => {
       const mockHtml = '<html><body></body></html>';
-      mockedAxios.get.mockResolvedValue({ data: mockHtml });
+      mockAxiosInstance.get.mockResolvedValue({ data: mockHtml });
 
       await fetcher.fetch().catch(() => {}); // Ignore validation error for empty result
 

@@ -154,9 +154,10 @@ describe('WelshUnitaryAuthoritiesFetcher Contract', () => {
       expect(result.success).toBe(true);
 
       // Welsh authorities are all unitary authorities/principal areas
+      // Some are County Borough Councils, some are County Councils, and some are just Councils
       result.data!.forEach((authority: UnitaryAuthorityData) => {
         expect(authority.name).not.toContain('District');
-        expect(authority.name).not.toContain('Borough');
+        // Borough is allowed as some are "County Borough Council"
         // They should be proper principal areas
       });
     });

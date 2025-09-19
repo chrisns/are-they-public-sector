@@ -122,7 +122,7 @@ describe('UKResearchCouncilsFetcher Contract', () => {
     });
 
     it('should have correct URL configuration', () => {
-      expect(fetcher.url).toBe('https://www.ukri.org/councils/');
+      expect(fetcher.url).toBe('https://www.ukri.org/about-us/our-councils/');
       expect(fetcher.source).toBe(DataSource.UKRI);
     });
 
