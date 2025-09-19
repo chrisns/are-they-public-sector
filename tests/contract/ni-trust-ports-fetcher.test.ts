@@ -7,7 +7,9 @@ import { NITrustPortsFetcher } from '../../src/services/fetchers/ni-trust-ports-
 import { DataSource } from '../../src/models/data-source';
 import { TrustPortData } from '../../src/models/source-data';
 
-describe('NITrustPortsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('NITrustPortsFetcher Contract', () => {
   let fetcher: NITrustPortsFetcher;
 
   beforeEach(() => {

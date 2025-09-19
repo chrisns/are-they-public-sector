@@ -7,7 +7,9 @@ import { NHSScotlandBoardsFetcher } from '../../src/services/fetchers/nhs-scotla
 import { DataSource } from '../../src/models/data-source';
 import { HealthOrganisationData } from '../../src/models/source-data';
 
-describe('NHSScotlandBoardsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('NHSScotlandBoardsFetcher Contract', () => {
   let fetcher: NHSScotlandBoardsFetcher;
 
   beforeEach(() => {

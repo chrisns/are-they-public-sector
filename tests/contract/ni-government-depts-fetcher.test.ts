@@ -7,7 +7,9 @@ import { NIGovernmentDeptsFetcher } from '../../src/services/fetchers/ni-governm
 import { DataSource } from '../../src/models/data-source';
 import { GovernmentDepartmentData } from '../../src/models/source-data';
 
-describe('NIGovernmentDeptsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('NIGovernmentDeptsFetcher Contract', () => {
   let fetcher: NIGovernmentDeptsFetcher;
 
   beforeEach(() => {

@@ -7,7 +7,9 @@ import { UKResearchCouncilsFetcher } from '../../src/services/fetchers/uk-resear
 import { DataSource } from '../../src/models/data-source';
 import { ResearchCouncilData } from '../../src/models/source-data';
 
-describe('UKResearchCouncilsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('UKResearchCouncilsFetcher Contract', () => {
   let fetcher: UKResearchCouncilsFetcher;
 
   beforeEach(() => {

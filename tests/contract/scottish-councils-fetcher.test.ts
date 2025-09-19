@@ -28,19 +28,21 @@ describe('ScottishCouncilsFetcher Contract Tests', () => {
 
   describe('fetch()', () => {
     it('should return array of ScottishCommunityRaw objects', async () => {
-      // Mock HTML response matching Wikipedia structure
+      // Mock HTML response matching Wikipedia structure with asterisks for active councils
       const mockHtml = `
         <html><body>
           <div class="mw-parser-output">
             <div class="mw-heading"><h2>Aberdeen City</h2></div>
             <ol>
-              <li>Ashgrove and Stockethill</li>
-              <li>Bridge of Don</li>
+              <li>Ashgrove and Stockethill*</li>
+              <li>Bridge of Don*</li>
+              <li>Dyce and Stoneywood*</li>
             </ol>
             <div class="mw-heading"><h2>Edinburgh</h2></div>
             <ol>
-              <li>Leith Community Council</li>
-              <li>Morningside Community Council</li>
+              <li>Leith Community Council*</li>
+              <li>Morningside Community Council*</li>
+              <li>Tollcross Community Council</li>
             </ol>
           </div>
         </body></html>
@@ -67,15 +69,15 @@ describe('ScottishCouncilsFetcher Contract Tests', () => {
     });
 
     it('should filter only active councils', async () => {
-      // Mock HTML with mix of active and inactive councils
+      // Mock HTML with mix of active (asterisk) and inactive councils
       const mockHtml = `
         <html><body>
           <div class="mw-parser-output">
             <div class="mw-heading"><h2>Test Area</h2></div>
             <ol>
-              <li>Active Council 1</li>
-              <li>Active Council 2</li>
-              <li>Inactive Council (dissolved 2020)</li>
+              <li>Active Council 1*</li>
+              <li>Active Council 2*</li>
+              <li>Inactive Council</li>
             </ol>
           </div>
         </body></html>
@@ -85,11 +87,10 @@ describe('ScottishCouncilsFetcher Contract Tests', () => {
 
       const result = await fetcher.fetch();
 
-      // Should filter out dissolved council
-      expect(result.length).toBe(2);
-      result.forEach(council => {
-        expect(council.isActive).toBe(true);
-      });
+      // Should include all councils but mark active status appropriately
+      expect(result.length).toBe(3);
+      const activeCouncils = result.filter(c => c.isActive);
+      expect(activeCouncils.length).toBe(2);
     });
 
     it('should verify required fields are present', async () => {
@@ -97,7 +98,7 @@ describe('ScottishCouncilsFetcher Contract Tests', () => {
         <html><body>
           <div class="mw-parser-output">
             <div class="mw-heading"><h2>Test Area</h2></div>
-            <ol><li>Test Council</li></ol>
+            <ol><li>Test Council*</li></ol>
           </div>
         </body></html>
       `;

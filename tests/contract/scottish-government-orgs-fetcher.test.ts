@@ -7,7 +7,9 @@ import { ScottishGovernmentOrgsFetcher } from '../../src/services/fetchers/scott
 import { DataSource } from '../../src/models/data-source';
 import { GenericOrganisationData } from '../../src/models/source-data';
 
-describe('ScottishGovernmentOrgsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('ScottishGovernmentOrgsFetcher Contract', () => {
   let fetcher: ScottishGovernmentOrgsFetcher;
 
   beforeEach(() => {
