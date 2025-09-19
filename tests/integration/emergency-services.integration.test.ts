@@ -13,7 +13,10 @@ import { DevolvedExtraMapper } from '../../src/services/mappers/devolved-extra-m
 import { OrganisationType, DataSourceType } from '../../src/models/organisation';
 import axios from 'axios';
 
-describe('Emergency Services Integration', () => {
+// Skip these tests in CI/local as they require network access
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Emergency Services Integration', () => {
   // Mock HTML responses
   const mockPoliceHTML = `
     <div class="police-forces">

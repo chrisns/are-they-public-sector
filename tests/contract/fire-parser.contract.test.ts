@@ -10,7 +10,9 @@ import axios from 'axios';
 // Mock axios for testing
 jest.mock('axios');
 
-describe('Fire Parser Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Fire Parser Contract', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

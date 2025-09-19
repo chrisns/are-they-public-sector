@@ -5,7 +5,9 @@
 
 import { ScottishCourtsParser } from '../../src/services/scottish-courts-parser';
 
-describe('ScottishCourtsParser Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('ScottishCourtsParser Contract', () => {
   let parser: ScottishCourtsParser;
 
   beforeEach(() => {

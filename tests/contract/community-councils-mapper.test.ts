@@ -40,21 +40,23 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
       result.forEach((org: Organisation) => {
         expect(org).toHaveProperty('id');
         expect(org).toHaveProperty('name');
-        expect(org).toHaveProperty('category');
+        expect(org).toHaveProperty('classification');
         expect(org).toHaveProperty('type');
         expect(org).toHaveProperty('location');
-        expect(org).toHaveProperty('source');
+        expect(org).toHaveProperty('sources');
 
         expect(org.id).toMatch(/^WCC_/);
-        expect(org.category).toBe('Local Government');
-        expect(org.type).toBe('Welsh Community Council');
-        expect(org.source).toBe('Welsh Government');
+        expect(org.classification).toBe('Welsh Community Council');
+        expect(org.type).toBe('welsh_community_council');
+        expect(org.sources).toBeDefined();
+        expect(Array.isArray(org.sources)).toBe(true);
       });
 
       // Test specific mapping
       const firstOrg = result[0];
       expect(firstOrg.name).toBe('Abertillery Town Council');
-      expect(firstOrg.location).toBe('Blaenau Gwent, Wales');
+      expect(firstOrg.location?.region).toBe('Blaenau Gwent');
+      expect(firstOrg.location?.country).toBe('Wales');
       expect(firstOrg.id).toBe('WCC_ABERTILLERY_TOWN_COUNCIL');
     });
 
@@ -81,16 +83,16 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
         {
           name: 'Aberdeenshire Community Council',
           councilArea: 'Aberdeenshire',
-          isActive: 'Yes',
-          ward: 'Central Buchan',
-          contactEmail: 'contact@example.com'
+          isActive: true,
+          region: 'North East Scotland',
+          contactDetails: 'contact@example.com'
         },
         {
           name: 'Glasgow Community Council',
           councilArea: 'Glasgow City',
-          isActive: 'Yes',
-          ward: 'City Centre',
-          contactEmail: 'info@glasgow.com'
+          isActive: true,
+          region: 'Central Scotland',
+          contactDetails: 'info@glasgow.com'
         }
       ];
 
@@ -102,21 +104,23 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
       result.forEach((org: Organisation) => {
         expect(org).toHaveProperty('id');
         expect(org).toHaveProperty('name');
-        expect(org).toHaveProperty('category');
+        expect(org).toHaveProperty('classification');
         expect(org).toHaveProperty('type');
         expect(org).toHaveProperty('location');
-        expect(org).toHaveProperty('source');
+        expect(org).toHaveProperty('sources');
 
         expect(org.id).toMatch(/^SCC_/);
-        expect(org.category).toBe('Local Government');
-        expect(org.type).toBe('Scottish Community Council');
-        expect(org.source).toBe('Scottish Government');
+        expect(org.classification).toBe('Scottish Community Council');
+        expect(org.type).toBe('scottish_community_council');
+        expect(org.sources).toBeDefined();
+        expect(Array.isArray(org.sources)).toBe(true);
       });
 
       // Test specific mapping
       const firstOrg = result[0];
       expect(firstOrg.name).toBe('Aberdeenshire Community Council');
-      expect(firstOrg.location).toBe('Aberdeenshire, Scotland');
+      expect(firstOrg.location?.region).toBe('Aberdeenshire');
+      expect(firstOrg.location?.country).toBe('Scotland');
       expect(firstOrg.id).toBe('SCC_ABERDEENSHIRE_COMMUNITY_COUNCIL');
     });
 
@@ -125,8 +129,8 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
         {
           name: 'Test Scottish Council',
           councilArea: 'Test Area',
-          isActive: 'Yes',
-          ward: 'Test Ward'
+          isActive: true,
+          region: 'Test Region'
         }
       ];
 
@@ -160,16 +164,17 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
       result.forEach((org: Organisation) => {
         expect(org).toHaveProperty('id');
         expect(org).toHaveProperty('name');
-        expect(org).toHaveProperty('category');
+        expect(org).toHaveProperty('classification');
         expect(org).toHaveProperty('type');
         expect(org).toHaveProperty('location');
-        expect(org).toHaveProperty('source');
+        expect(org).toHaveProperty('sources');
 
         expect(org.id).toMatch(/^NIHT_/);
-        expect(org.category).toBe('Health');
-        expect(org.type).toBe('Health and Social Care Trust');
-        expect(org.location).toBe('Northern Ireland');
-        expect(org.source).toBe('Northern Ireland Health Service');
+        expect(org.classification).toBe('Health and Social Care Trust');
+        expect(org.type).toBe('ni_health_trust');
+        expect(org.location?.country).toBe('Northern Ireland');
+        expect(org.sources).toBeDefined();
+        expect(Array.isArray(org.sources)).toBe(true);
       });
 
       // Test specific mapping
@@ -201,7 +206,7 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
         { input: 'Council with & Special Characters!', expected: 'COUNCIL_WITH_SPECIAL_CHARACTERS' },
         { input: 'Multiple   Spaces', expected: 'MULTIPLE_SPACES' },
         { input: 'Hyphenated-Name', expected: 'HYPHENATED_NAME' },
-        { input: "Council's Name", expected: 'COUNCILS_NAME' }
+        { input: "Council's Name", expected: 'COUNCIL_S_NAME' }
       ];
 
       testCases.forEach(({ input, expected }) => {
@@ -228,7 +233,7 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
       const scottishCouncil: ScottishCommunityRaw = {
         name: 'Scottish Test Council',
         councilArea: 'Test Area',
-        isActive: 'Yes'
+        isActive: true
       };
 
       const niTrust: NIHealthTrustRaw = {
@@ -247,10 +252,10 @@ describe('CommunityCouncilsMapper Contract Tests', () => {
         const org = result[0];
         expect(org.id).toBeDefined();
         expect(org.name).toBeDefined();
-        expect(org.category).toBeDefined();
+        expect(org.classification).toBeDefined();
         expect(org.type).toBeDefined();
         expect(org.location).toBeDefined();
-        expect(org.source).toBeDefined();
+        expect(org.sources).toBeDefined();
       });
 
       // Verify unique prefixes

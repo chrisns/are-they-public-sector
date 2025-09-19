@@ -193,8 +193,8 @@ export class CommunityCouncilsMapper {
    */
   normalizeId(name: string): string {
     return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '_')  // Replace non-alphanumeric with underscore
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '_')  // Replace non-alphanumeric with underscore
       .replace(/^_+|_+$/g, '')       // Trim underscores from ends
       .substring(0, 50);             // Limit length to 50 characters
   }

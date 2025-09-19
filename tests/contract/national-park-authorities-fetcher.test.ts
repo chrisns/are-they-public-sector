@@ -7,7 +7,9 @@ import { NationalParkAuthoritiesFetcher } from '../../src/services/fetchers/nati
 import { DataSource } from '../../src/models/data-source';
 import { NationalParkData } from '../../src/models/source-data';
 
-describe('NationalParkAuthoritiesFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('NationalParkAuthoritiesFetcher Contract', () => {
   let fetcher: NationalParkAuthoritiesFetcher;
 
   beforeEach(() => {

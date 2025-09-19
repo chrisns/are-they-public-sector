@@ -7,7 +7,9 @@ import { IntegratedCareBoardsFetcher } from '../../src/services/fetchers/integra
 import { DataSource } from '../../src/models/data-source';
 import { HealthOrganisationData } from '../../src/models/source-data';
 
-describe('IntegratedCareBoardsFetcher Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('IntegratedCareBoardsFetcher Contract', () => {
   let fetcher: IntegratedCareBoardsFetcher;
 
   beforeEach(() => {

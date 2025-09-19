@@ -5,7 +5,9 @@
 
 import { NHSCharitiesParser } from '../../src/services/nhs-charities-parser';
 
-describe('NHSCharitiesParser Contract', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('NHSCharitiesParser Contract', () => {
   let parser: NHSCharitiesParser;
 
   beforeEach(() => {

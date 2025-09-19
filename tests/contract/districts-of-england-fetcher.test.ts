@@ -7,7 +7,10 @@ import { DistrictsOfEnglandFetcher } from '../../src/services/fetchers/districts
 import { DataSource } from '../../src/models/data-source';
 import { DistrictCouncilData } from '../../src/models/source-data';
 
-describe('DistrictsOfEnglandFetcher Contract', () => {
+// Skip these tests in CI/local as they require network access
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('DistrictsOfEnglandFetcher Contract', () => {
   let fetcher: DistrictsOfEnglandFetcher;
 
   beforeEach(() => {
