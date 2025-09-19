@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class LocalHealthwatchFetcher {
   public readonly source = DataSource.HEALTHWATCH;
-  public readonly url = 'https://www.healthwatch.co.uk/your-local-healthwatch';
+  public readonly url = 'https://www.healthwatch.co.uk/your-local-healthwatch/list';
 
   async fetch(): Promise<FetcherResponse<HealthOrganisationData>> {
     try {

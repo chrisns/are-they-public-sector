@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class UKResearchCouncilsFetcher {
   public readonly source = DataSource.UKRI;
-  public readonly url = 'https://www.ukri.org/about-us/our-councils/';
+  public readonly url = 'https://www.ukri.org/councils/';
 
   async fetch(): Promise<FetcherResponse<ResearchCouncilData>> {
     try {

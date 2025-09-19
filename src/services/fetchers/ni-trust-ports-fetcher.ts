@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class NITrustPortsFetcher {
   public readonly source = DataSource.INFRASTRUCTURE_NI;
-  public readonly url = 'https://www.infrastructure-ni.gov.uk/topics/marine-and-fisheries/ports-and-harbours';
+  public readonly url = 'https://www.infrastructure-ni.gov.uk/articles/gateways-sea-ports';
 
   async fetch(): Promise<FetcherResponse<TrustPortData>> {
     try {

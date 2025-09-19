@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class ScottishRTPsFetcher {
   public readonly source = DataSource.TRANSPORT_SCOTLAND;
-  public readonly url = 'https://www.transport.gov.scot/our-approach/strategy/regional-transport-partnerships-rtps/';
+  public readonly url = 'https://www.transport.gov.scot/our-approach/strategy/regional-transport-partnerships/';
 
   async fetch(): Promise<FetcherResponse<TransportPartnershipData>> {
     try {

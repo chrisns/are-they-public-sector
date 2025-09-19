@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class NHSScotlandBoardsFetcher {
   public readonly source = DataSource.NHS_SCOTLAND;
-  public readonly url = 'https://www.nhsinform.scot/about-nhs-scotland/nhs-boards';
+  public readonly url = 'https://www.scot.nhs.uk/organisations/';
 
   async fetch(): Promise<FetcherResponse<HealthOrganisationData>> {
     try {
@@ -248,7 +248,7 @@ export class NHSScotlandBoardsFetcher {
 
     // Handle relative URLs
     if (url.startsWith('/')) {
-      return `https://www.nhsinform.scot${url}`;
+      return `https://www.scot.nhs.uk${url}`;
     }
 
     if (!url.startsWith('http')) return undefined;
