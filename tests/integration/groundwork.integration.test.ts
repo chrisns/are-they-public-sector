@@ -6,7 +6,9 @@ import { OrganisationType } from '../../src/models/organisation';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-describe('Groundwork Integration', () => {
+const describeIfNetwork = process.env.TEST_NETWORK ? describe : describe.skip;
+
+describeIfNetwork('Groundwork Integration', () => {
   describe('Full flow: fetch → parse → map', () => {
     beforeEach(() => {
       jest.clearAllMocks();
