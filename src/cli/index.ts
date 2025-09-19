@@ -6,7 +6,7 @@
  */
 
 import { Command } from 'commander';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, statSync } from 'fs';
 import { dirname } from 'path';
 import { performance } from 'perf_hooks';
 
@@ -204,6 +204,13 @@ async function runAggregation(options: CliOptions): Promise<void> {
       logger.info(`  • Sources: ${result.metadata?.sources?.length || 3} sources`);
       logger.info(`  • Duplicates merged: ${result.metadata?.statistics?.duplicatesFound || 0}`);
       logger.info(`  • Processing time: ${duration.toFixed(2)}s`);
+
+      // Check and report file size
+      if (existsSync(outputPath)) {
+        const stats = statSync(outputPath);
+        const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
+        logger.info(`  • Output file size: ${fileSizeMB} MB`);
+      }
 
       if (options.cache) {
         logger.info(`  • Cache: Enabled (use --cache to reuse)`);
