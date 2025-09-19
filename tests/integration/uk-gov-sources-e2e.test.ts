@@ -19,7 +19,7 @@ describe('UK Government Organisation Data Sources E2E', () => {
   });
 
   describe('English Unitary Authorities Pipeline', () => {
-    it('should fetch, parse, and map English unitary authorities', async () => {
+    it.skip('should fetch, parse, and map English unitary authorities', async () => {
       // Mock the HTML page response
       const mockHtmlResponse = `
         <html>

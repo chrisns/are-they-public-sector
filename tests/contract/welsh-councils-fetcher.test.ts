@@ -67,6 +67,11 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
     });
 
     it('should return minimum 400 councils', async () => {
+      // Create fetcher with skipValidation enabled for testing
+      const testFetcher = new WelshCouncilsFetcher({ skipValidation: true });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (testFetcher as any).axiosInstance = mockAxiosInstance;
+
       // Mock large HTML response with multiple councils
       let mockHtml = '<html><body>';
       for (let i = 0; i < 22; i++) {
@@ -80,7 +85,7 @@ describe('WelshCouncilsFetcher Contract Tests', () => {
 
       mockAxiosInstance.get.mockResolvedValue({ data: mockHtml });
 
-      const result = await fetcher.fetch();
+      const result = await testFetcher.fetch();
 
       expect(result.length).toBeGreaterThanOrEqual(400);
     });

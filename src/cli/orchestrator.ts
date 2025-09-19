@@ -423,7 +423,7 @@ export class Orchestrator {
 
       // Download Excel file
       this.logger.startProgress('Downloading ONS Excel file...');
-      const excelPath = await this.getCachedOrFetch('ons-excel-data', async () => {
+      const excelData = await this.getCachedOrFetch('ons-excel-data', async () => {
         const downloadResult = await this.fetcher.downloadOnsExcel(excelUrl as string);
         if (!downloadResult.success) {
           throw new Error('Failed to download ONS Excel file');
@@ -434,7 +434,7 @@ export class Orchestrator {
 
       // Parse Excel data using simple parser
       this.logger.startProgress('Parsing ONS Excel data...');
-      const parseResult = this.simpleParser.parseOnsExcel((excelPath as {filePath?: string}).filePath || (excelPath as string));
+      const parseResult = this.simpleParser.parseOnsExcel((excelData as {buffer?: Buffer}).buffer || (excelData as Buffer));
       
       const institutionalData = parseResult.data?.institutional || [];
       const nonInstitutionalData = parseResult.data?.nonInstitutional || [];
