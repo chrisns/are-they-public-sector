@@ -2051,30 +2051,65 @@ export class Orchestrator {
       // Consider aggregation successful if we got any data, even if some sources failed
       const hasData = dedupResult.organisations.length > 0;
 
-      // Log errors if any
+      // Log errors if any - TREAT AS ERROR NOT WARNING
       if (errors.length > 0) {
         const failedSourceDetails = errors.map(err => {
           // Extract source name from error message if possible
           const match = err.message.match(/Failed to fetch (.+) data/);
-          if (match) return match[1];
-          // Try other patterns
-          if (err.message.includes('police')) return 'Police Forces';
-          if (err.message.includes('fire')) return 'Fire Services';
-          if (err.message.includes('devolved')) return 'Devolved Administrations';
-          if (err.message.includes('colleges')) return 'Colleges';
-          if (err.message.includes('Scottish')) return 'Scottish Courts';
+          if (match) return { name: match[1], message: err.message };
+
+          // Try to match specific patterns for legacy error messages
+          const patterns = [
+            { pattern: /GOV\.UK fetch failed/, name: 'GOV.UK' },
+            { pattern: /ONS fetch failed/, name: 'ONS' },
+            { pattern: /NHS fetch failed/, name: 'NHS' },
+            { pattern: /Local Authority fetch failed/, name: 'Local Authorities' },
+            { pattern: /Schools fetch failed/, name: 'Schools (GIAS)' },
+            { pattern: /Devolved admin fetch failed/, name: 'Devolved Administration' },
+            { pattern: /Police fetch failed/, name: 'Police Forces' },
+            { pattern: /Fire services fetch failed/, name: 'Fire Services' },
+            { pattern: /Additional devolved fetch failed/, name: 'Additional Devolved Bodies' },
+            { pattern: /Colleges fetch failed/, name: 'UK Colleges' },
+            { pattern: /NI Schools fetch failed/, name: 'Northern Ireland Schools' },
+            { pattern: /Courts fetch failed/, name: 'UK Courts and Tribunals' },
+            { pattern: /Groundwork fetch failed/, name: 'Groundwork Trusts' },
+            { pattern: /NHS Charities fetch failed/, name: 'NHS Charities' },
+            { pattern: /Welsh councils fetch failed/, name: 'Welsh Community Councils' },
+            { pattern: /Scottish councils fetch failed/, name: 'Scottish Community Councils' },
+            { pattern: /NI Health Trusts fetch failed/, name: 'NI Health and Social Care Trusts' },
+            { pattern: /English Unitary Authorities fetch failed/, name: 'English Unitary Authorities' },
+            { pattern: /Districts of England fetch failed/, name: 'Districts of England' },
+            { pattern: /National Parks fetch failed/, name: 'National Park Authorities' },
+            { pattern: /ICBs fetch failed/, name: 'Integrated Care Boards' },
+            { pattern: /Local Healthwatch fetch failed/, name: 'Local Healthwatch' },
+            { pattern: /Scottish Gov orgs fetch failed/, name: 'Scottish Government Organisations' },
+            { pattern: /NHS Scotland boards fetch failed/, name: 'NHS Scotland Boards' },
+            { pattern: /Scottish RTPs fetch failed/, name: 'Scottish RTPs' },
+            { pattern: /Welsh Unitary Authorities fetch failed/, name: 'Welsh Unitary Authorities' },
+            { pattern: /NI Trust Ports fetch failed/, name: 'NI Trust Ports' },
+            { pattern: /NI Government Depts fetch failed/, name: 'NI Government Departments' },
+            { pattern: /UK Research Councils fetch failed/, name: 'UK Research Councils' }
+          ];
+
+          for (const { pattern, name } of patterns) {
+            if (pattern.test(err.message)) {
+              return { name, message: err.message };
+            }
+          }
+
           // Fallback
-          return err.message.split(':')[0].trim();
+          return { name: err.message.split(':')[0].trim(), message: err.message };
         });
 
-        this.logger.warn(`WARNING: ${errors.length} data source(s) failed:`);
-        failedSourceDetails.forEach((source, i) => {
-          this.logger.warn(`  • ${source}: ${errors[i].message}`);
+        // Use ERROR level not WARN - failures are errors!
+        this.logger.error(`ERROR: ${errors.length} data source(s) failed:`);
+        failedSourceDetails.forEach(detail => {
+          this.logger.error(`  • ${detail.name}: ${detail.message}`);
         });
       }
 
       return {
-        success: hasData,  // Succeed if we have ANY data, even if some sources failed
+        success: hasData && errors.length === 0,  // Only succeed if ALL sources succeeded
         sources,
         organisations: dedupResult.organisations,
         totalRecords: dedupResult.organisations.length,

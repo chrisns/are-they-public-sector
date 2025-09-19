@@ -11,7 +11,7 @@ import { DEFAULT_RETRY_CONFIG } from '../../models/source-data.js';
 
 export class NIGovernmentDeptsFetcher {
   public readonly source = DataSource.NI_GOVERNMENT;
-  public readonly url = 'https://www.nidirect.gov.uk/government-departments-and-agencies';
+  public readonly url = 'https://www.nidirect.gov.uk/government-departments-northern-ireland';
 
   async fetch(): Promise<FetcherResponse<GovernmentDepartmentData>> {
     try {
