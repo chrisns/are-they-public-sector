@@ -7,6 +7,7 @@ const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('ScottishCouncilsFetcher Contract Tests', () => {
   let fetcher: ScottishCouncilsFetcher;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockAxiosInstance: any;
 
   beforeEach(() => {
