@@ -1,19 +1,19 @@
 # Claude Code Context
 
 ## Project Overview
-UK Public Sector Organisation Aggregator - A TypeScript CLI tool that aggregates organisation data from multiple government sources into a unified JSON format.
+UK Public Sector Organisation Aggregator - A TypeScript CLI that aggregates 59,977 organisations from 30 government sources into unified JSON.
 
 ## Tech Stack
-- **Language**: TypeScript 5.x
+- **Language**: TypeScript 5.x with ESM modules
 - **Runtime**: Node.js 18+ with tsx
 - **Package Manager**: pnpm
 - **Testing**: Jest with ts-jest (80% coverage required)
-- **Key Dependencies**: axios, xlsx, commander, cheerio, pdf-parse (minimal dependencies policy)
+- **Key Dependencies**: axios, xlsx, csv-parse, cheerio, pdf-parse (minimal dependencies)
 
 ## Commands
 ```bash
 pnpm install          # Install dependencies
-pnpm run compile      # Execute aggregator (tsx src/cli/index.ts)
+pnpm run compile      # Execute aggregator (generates dist/orgs.json ~70MB)
 pnpm test            # Run all tests
 pnpm run coverage    # Generate coverage report
 pnpm run lint        # Type check with tsc --noEmit
@@ -22,57 +22,92 @@ pnpm run lint        # Type check with tsc --noEmit
 ## Project Structure
 ```text
 src/
-├── models/          # TypeScript interfaces
-├── services/        # Core logic (fetcher, parser, mapper, deduplicator)
-├── cli/            # CLI entry point
-└── lib/            # Utilities (writer)
+├── cli/
+│   ├── index.ts         # Entry point with file size reporting
+│   ├── orchestrator.ts  # Coordinates 30 data sources
+│   └── logger.ts        # Console output with sections
+├── services/
+│   ├── fetcher.ts       # Base HTTP fetcher with retries
+│   ├── parser.ts        # Excel parser (buffer support)
+│   ├── parser-simple.ts # CSV parser (buffer support)
+│   └── fetchers/        # 30 individual source fetchers
+├── models/              # TypeScript interfaces
+│   └── organisation.ts  # Core model with OrganisationType enum
+└── lib/
+    └── writer.ts        # JSON output writer
 
 tests/
-├── contract/       # API contract tests
-├── integration/    # E2E tests
-├── mocks/         # Test data
-└── unit/          # Unit tests
+├── contract/           # API contract tests
+├── integration/        # E2E pipeline tests
+└── unit/              # Component unit tests
+
+docs/
+├── data-sources.md     # Details on all 30 sources
+└── api-reference.md    # Organisation model documentation
 ```
 
 ## Testing Requirements
 - TDD: Write failing tests first (RED-GREEN-Refactor)
 - Test order: Contract → Integration → Unit
 - 80% coverage minimum
-- Use real dependencies, mock external APIs
+- Mock external APIs, use real dependencies
+- All source failures must return exit code 1
 
-## Current Feature
-Adding UK Government Organisation Data Sources (12 sources):
-- English Unitary Authorities: Dynamic CSV from ONS
-- Districts of England: ~164 from Wikipedia
-- Welsh Unitary Authorities: 22 from Law.gov.wales
-- Scottish orgs: MyGov.scot directory
-- Health: ICBs, Health Boards, Local Healthwatch (paginated)
-- Transport: Scottish RTPs, NI Trust Ports
-- Other: Research Councils, National Parks, NI Departments
+## Key Architecture Decisions
+- **In-Memory Processing**: No temporary files, everything uses buffers
+- **No Deduplication**: Removed to preserve all source records
+- **Parallel Fetching**: Multiple sources fetched concurrently
+- **Error = Failure**: Any source failure causes non-zero exit
+- **Source Filtering**: --source flag for selective aggregation
 
-## Key Files
-- `specs/013-unitary-authorities-england/` - Current feature specs
-- `src/services/fetchers/` - 12 new fetcher services (NEW)
-  - english-unitary-authorities-fetcher.ts
-  - districts-of-england-fetcher.ts
-  - local-healthwatch-fetcher.ts (paginated)
-  - Plus 9 other source fetchers
-- `src/services/mappers/` - Type-specific mappers (NEW)
-- `src/cli/orchestrator.ts` - Update to include new sources
+## Data Sources (30 Total)
+- **Education**: GIAS schools, NI schools, FE colleges
+- **Healthcare**: NHS trusts, ICBs, health boards, healthwatch
+- **Local Gov**: Unitary/district councils, community councils
+- **Emergency**: Police forces, fire services
+- **Government**: GOV.UK API, ONS classification, devolved bodies
+- **Other**: Courts, ports, research councils, national parks
+
+See `docs/data-sources.md` for complete details.
+
+## Current Feature Branch
+**014-we-ve-done**: Documentation, GitHub Actions CI/CD, and searchable website
+- Tasks: T001-T039 in `specs/014-we-ve-done/tasks.md`
+- Tech: Tailwind CSS, Alpine.js, Fuse.js for website
+- CI/CD: Nightly updates, PR testing, GitHub Pages deployment
 
 ## Development Notes
-- Dynamic CSV link extraction from ONS page
-- Pagination handling for Healthwatch (iterate all pages)
-- HTML scraping with cheerio for 11 sources
-- CSV parsing for ONS data
-- Retry logic with exponential backoff
-- UTF-8 handling for special characters
-- Deduplication across multiple sources
+- **Source IDs**: Each source has multiple IDs (e.g., `gias`, `schools`)
+- **Fetcher Pattern**: All extend BaseFetcher with fetch() method
+- **Buffer Processing**: Parser accepts string (path) or Buffer
+- **Error Logging**: Failed sources log ERROR with source name
+- **File Size**: Output logged in MB after generation
+- **UTF-8**: Full support for Welsh/Scottish special characters
 
-## Recent Changes
-- Branch 013-unitary-authorities-england: Adding 12 UK gov data sources
-- Branch 012-welsh-community-councils: Welsh/Scottish councils and NI Health Trusts
-- Branch 011-i-have-found: GIAS CSV download replacement
+## Recent Major Changes
+- Removed all deduplication functionality
+- Converted file-based to in-memory processing
+- Fixed 404s in 5 fetchers (URLs updated)
+- Added 30 total data sources (59,977 organisations)
+- Added file size reporting to CLI output
+
+## Testing Helpers
+```bash
+# Test individual source
+pnpm run compile -- --source schools
+
+# Check for 404 errors
+pnpm run compile 2>&1 | grep ERROR
+
+# Verify output size
+ls -lh dist/orgs.json  # Should be ~70MB
+```
+
+## Common Issues & Fixes
+- **404 Errors**: Check fetcher URLs match current websites
+- **Test Failures**: Update expectations after adding sources
+- **Type Errors**: Use proper types instead of `any`
+- **Memory Issues**: Use streaming for large datasets
 
 ---
 *Auto-generated context for AI assistants. Keep under 150 lines.*

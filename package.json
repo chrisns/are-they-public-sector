@@ -9,7 +9,7 @@
     "test": "jest",
     "coverage": "jest --coverage",
     "lint": "eslint --exit-on-fatal-error",
-    "start": "run compile",
+    "start": "tsx src/cli/index.ts",
     "test:watch": "jest --watch"
   },
   "engines": {

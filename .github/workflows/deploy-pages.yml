@@ -1,0 +1,104 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'website/**'
+      - 'dist/orgs.json'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Nightly Data Update"]
+    types:
+      - completed
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        run_install: false
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Ensure data exists
+      run: |
+        if [ ! -f "dist/orgs.json" ]; then
+          echo "orgs.json not found, generating it..."
+          pnpm run compile
+        fi
+
+        # Verify file exists and is valid
+        if [ ! -f "dist/orgs.json" ]; then
+          echo "Error: Failed to generate orgs.json"
+          exit 1
+        fi
+
+        echo "Data file size: $(du -h dist/orgs.json | cut -f1)"
+
+    - name: Build website
+      run: |
+        # Copy data file to website directory
+        cp dist/orgs.json website/data/ 2>/dev/null || mkdir -p website/data && cp dist/orgs.json website/data/
+
+        # Generate metadata file
+        cat > website/data/metadata.json << EOF
+        {
+          "lastUpdated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "organisationCount": $(jq '.organisations | length' dist/orgs.json),
+          "fileSize": $(stat -f%z "dist/orgs.json" 2>/dev/null || stat -c%s "dist/orgs.json" 2>/dev/null),
+          "githubRepo": "${{ github.repository }}"
+        }
+        EOF
+
+        # Install Tailwind CSS via CDN (no build needed for now)
+        # The website will use CDN versions of all libraries
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: './website'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+    - name: Output deployment URL
+      run: |
+        echo "Website deployed to: ${{ steps.deployment.outputs.page_url }}"
+        echo "Data available at: ${{ steps.deployment.outputs.page_url }}data/orgs.json"

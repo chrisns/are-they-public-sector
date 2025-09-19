@@ -1,0 +1,174 @@
+name: Nightly Data Update
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Specific source to update (leave empty for all)'
+        required: false
+        type: string
+      debug_enabled:
+        type: boolean
+        description: 'Run with debug logging'
+        required: false
+        default: false
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        run_install: false
+
+    - name: Get pnpm store directory
+      shell: bash
+      run: |
+        echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+    - name: Setup pnpm cache
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.STORE_PATH }}
+        key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-pnpm-store-
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Run data aggregation
+      run: |
+        echo "Starting data aggregation at $(date)"
+        if [ -n "${{ github.event.inputs.source }}" ]; then
+          echo "Running for specific source: ${{ github.event.inputs.source }}"
+          pnpm run compile -- --source "${{ github.event.inputs.source }}"
+        else
+          echo "Running for all sources"
+          pnpm run compile
+        fi
+      env:
+        NODE_OPTIONS: --max-old-space-size=8192
+        DEBUG: ${{ github.event.inputs.debug_enabled == 'true' && 'true' || '' }}
+
+    - name: Verify output
+      run: |
+        if [ ! -f "dist/orgs.json" ]; then
+          echo "Error: orgs.json was not generated"
+          exit 1
+        fi
+
+        # Check file size
+        FILE_SIZE=$(stat -f%z "dist/orgs.json" 2>/dev/null || stat -c%s "dist/orgs.json" 2>/dev/null)
+        FILE_SIZE_MB=$((FILE_SIZE / 1048576))
+        echo "Generated orgs.json is ${FILE_SIZE_MB}MB"
+
+        # Verify it's valid JSON
+        jq empty dist/orgs.json
+        echo "JSON validation passed"
+
+        # Count organisations
+        ORG_COUNT=$(jq '.organisations | length' dist/orgs.json)
+        echo "Total organisations: ${ORG_COUNT}"
+
+        if [ "$ORG_COUNT" -lt "50000" ]; then
+          echo "Warning: Organisation count seems low (${ORG_COUNT})"
+        fi
+
+    - name: Generate metadata
+      run: |
+        cat > dist/metadata.json << EOF
+        {
+          "lastUpdated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+          "organisationCount": $(jq '.organisations | length' dist/orgs.json),
+          "fileSize": $(stat -f%z "dist/orgs.json" 2>/dev/null || stat -c%s "dist/orgs.json" 2>/dev/null),
+          "sources": $(jq '.metadata.sources' dist/orgs.json),
+          "githubRunId": "${{ github.run_id }}",
+          "githubRunNumber": "${{ github.run_number }}"
+        }
+        EOF
+
+        echo "Metadata generated:"
+        cat dist/metadata.json
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+        # Add files
+        git add dist/orgs.json dist/metadata.json
+
+        # Check if there are changes
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          # Commit with timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
+          git commit -m "chore: Update organisation data - ${TIMESTAMP}
+
+        Automated update via GitHub Actions
+        - Organisation count: $(jq '.organisations | length' dist/orgs.json)
+        - File size: $(stat -f%z "dist/orgs.json" 2>/dev/null || stat -c%s "dist/orgs.json" 2>/dev/null | numfmt --to=iec)
+        - Run ID: ${{ github.run_id }}"
+
+          # Push to main branch
+          git push origin main
+          echo "Changes pushed successfully"
+        fi
+
+    - name: Upload artifacts
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: aggregation-output-${{ github.run_number }}
+        path: |
+          dist/orgs.json
+          dist/metadata.json
+        retention-days: 30
+
+    - name: Create issue on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = `Nightly update failed - ${new Date().toISOString().split('T')[0]}`;
+          const body = `
+          ## Nightly Data Update Failed
+
+          **Run:** [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          **Time:** ${new Date().toISOString()}
+          **Source:** ${{ github.event.inputs.source || 'all sources' }}
+
+          Please investigate the failure and resolve any issues with data sources.
+
+          ### Debug Steps
+          1. Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          2. Run locally with: \`pnpm run compile\`
+          3. Check for 404 errors or API changes
+          `;
+
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: title,
+            body: body,
+            labels: ['bug', 'automated', 'data-update']
+          });

@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UK Public Sector Organisations - Search & Explore</title>
+    <meta name="description" content="Search and explore 59,977 UK public sector organisations from 30+ government sources">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Fuse.js for fuzzy search -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+
+    <!-- Chart.js for statistics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="h-full bg-gray-50" x-data="app()">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">
+                        🇬🇧 UK Public Sector Organisations
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-500" x-show="metadata">
+                        Last updated: <span x-text="formatDate(metadata.lastUpdated)"></span>
+                    </span>
+                    <a href="https://github.com/chrisns/are-they-public-sector"
+                       class="text-sm text-blue-600 hover:text-blue-800"
+                       target="_blank">
+                        GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Loading State -->
+            <div x-show="loading" class="flex items-center justify-center h-64">
+                <div class="text-center">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <p class="mt-4 text-gray-600">Loading <span x-text="loadingProgress"></span> organisations...</p>
+                </div>
+            </div>
+
+            <!-- Error State -->
+            <div x-show="error" x-cloak class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-red-800">Error: <span x-text="error"></span></p>
+            </div>
+
+            <!-- Main Interface -->
+            <div x-show="!loading && !error" x-cloak>
+                <!-- Statistics Dashboard -->
+                <div class="bg-white rounded-lg shadow mb-6 p-6">
+                    <h2 class="text-lg font-semibold mb-4">Overview</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50 rounded p-4">
+                            <div class="text-2xl font-bold text-blue-900" x-text="totalOrganisations.toLocaleString()"></div>
+                            <div class="text-sm text-blue-700">Total Organisations</div>
+                        </div>
+                        <div class="bg-green-50 rounded p-4">
+                            <div class="text-2xl font-bold text-green-900" x-text="Object.keys(typeBreakdown).length"></div>
+                            <div class="text-sm text-green-700">Organisation Types</div>
+                        </div>
+                        <div class="bg-purple-50 rounded p-4">
+                            <div class="text-2xl font-bold text-purple-900">30</div>
+                            <div class="text-sm text-purple-700">Data Sources</div>
+                        </div>
+                        <div class="bg-orange-50 rounded p-4">
+                            <div class="text-2xl font-bold text-orange-900" x-text="fileSizeMB"></div>
+                            <div class="text-sm text-orange-700">Dataset Size (MB)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="bg-white rounded-lg shadow mb-6 p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Search Input -->
+                        <div class="md:col-span-1">
+                            <label for="search" class="block text-sm font-medium text-gray-700 mb-1">
+                                Search by Name
+                            </label>
+                            <input type="text"
+                                   id="search"
+                                   x-model="searchTerm"
+                                   @input.debounce.300ms="performSearch()"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   placeholder="e.g., Birmingham, NHS, Police">
+                        </div>
+
+                        <!-- Type Filter -->
+                        <div>
+                            <label for="typeFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                                Organisation Type
+                            </label>
+                            <select id="typeFilter"
+                                    x-model="selectedType"
+                                    @change="applyFilters()"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Types</option>
+                                <template x-for="type in organisationTypes" :key="type">
+                                    <option :value="type" x-text="formatType(type)"></option>
+                                </template>
+                            </select>
+                        </div>
+
+                        <!-- Location Filter -->
+                        <div>
+                            <label for="locationFilter" class="block text-sm font-medium text-gray-700 mb-1">
+                                Location
+                            </label>
+                            <select id="locationFilter"
+                                    x-model="selectedLocation"
+                                    @change="applyFilters()"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">All Locations</option>
+                                <option value="England">England</option>
+                                <option value="Scotland">Scotland</option>
+                                <option value="Wales">Wales</option>
+                                <option value="Northern Ireland">Northern Ireland</option>
+                                <option value="UK">UK-wide</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Results Count -->
+                    <div class="mt-4 text-sm text-gray-600">
+                        Showing <span x-text="filteredOrganisations.length.toLocaleString()" class="font-semibold"></span>
+                        organisations
+                        <span x-show="searchTerm || selectedType || selectedLocation">
+                            (filtered from <span x-text="totalOrganisations.toLocaleString()"></span>)
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Results List -->
+                <div class="bg-white rounded-lg shadow">
+                    <!-- Pagination Controls (Top) -->
+                    <div class="px-6 py-3 border-b border-gray-200 flex items-center justify-between">
+                        <div class="text-sm text-gray-700">
+                            Page <span x-text="currentPage"></span> of <span x-text="totalPages"></span>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button @click="previousPage()"
+                                    :disabled="currentPage === 1"
+                                    class="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Previous
+                            </button>
+                            <button @click="nextPage()"
+                                    :disabled="currentPage === totalPages"
+                                    class="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                Next
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Organisation Cards -->
+                    <div class="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+                        <template x-for="org in paginatedOrganisations" :key="org.id">
+                            <div class="p-4 hover:bg-gray-50 cursor-pointer" @click="showDetails(org)">
+                                <div class="flex items-start justify-between">
+                                    <div class="flex-1">
+                                        <h3 class="text-sm font-semibold text-gray-900" x-text="org.name"></h3>
+                                        <div class="mt-1 flex items-center space-x-4 text-xs text-gray-500">
+                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded"
+                                                  x-text="formatType(org.type)"></span>
+                                            <span x-show="org.region" x-text="org.region"></span>
+                                            <span x-show="org.status"
+                                                  :class="getStatusClass(org.status)"
+                                                  x-text="org.status"></span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4 flex-shrink-0">
+                                        <div class="text-xs text-gray-400">
+                                            Quality: <span x-text="Math.round(org.dataQuality.completeness * 100)"></span>%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- No Results -->
+                    <div x-show="filteredOrganisations.length === 0" class="p-8 text-center text-gray-500">
+                        No organisations found matching your criteria
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Organisation Detail Modal -->
+    <div x-show="selectedOrg"
+         x-cloak
+         @click.away="selectedOrg = null"
+         @keydown.escape.window="selectedOrg = null"
+         class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+            <div class="relative inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="flex items-start justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900" x-text="selectedOrg?.name"></h3>
+                        <button @click="selectedOrg = null" class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700">Basic Information</h4>
+                            <dl class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <dt class="text-gray-500">Type:</dt>
+                                    <dd x-text="formatType(selectedOrg?.type)"></dd>
+                                </div>
+                                <div>
+                                    <dt class="text-gray-500">Status:</dt>
+                                    <dd x-text="selectedOrg?.status"></dd>
+                                </div>
+                                <div x-show="selectedOrg?.region">
+                                    <dt class="text-gray-500">Region:</dt>
+                                    <dd x-text="selectedOrg?.region"></dd>
+                                </div>
+                                <div x-show="selectedOrg?.classification">
+                                    <dt class="text-gray-500">Classification:</dt>
+                                    <dd x-text="selectedOrg?.classification"></dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        <div x-show="selectedOrg?.location">
+                            <h4 class="text-sm font-semibold text-gray-700">Location</h4>
+                            <p class="mt-2 text-sm" x-text="selectedOrg?.location?.address || 'No address available'"></p>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700">Data Sources</h4>
+                            <ul class="mt-2 text-sm space-y-1">
+                                <template x-for="source in selectedOrg?.sources" :key="source.source">
+                                    <li class="text-gray-600">
+                                        <span x-text="source.source"></span>
+                                        <span class="text-gray-400">
+                                            (confidence: <span x-text="Math.round(source.confidence * 100)"></span>%)
+                                        </span>
+                                    </li>
+                                </template>
+                            </ul>
+                        </div>
+
+                        <div x-show="selectedOrg?.additionalProperties && Object.keys(selectedOrg.additionalProperties).length > 0">
+                            <h4 class="text-sm font-semibold text-gray-700">Additional Properties</h4>
+                            <dl class="mt-2 text-sm space-y-1">
+                                <template x-for="[key, value] in Object.entries(selectedOrg?.additionalProperties || {})" :key="key">
+                                    <div class="flex">
+                                        <dt class="text-gray-500 mr-2" x-text="formatPropertyKey(key) + ':'"></dt>
+                                        <dd x-text="value"></dd>
+                                    </div>
+                                </template>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button @click="downloadOrgData(selectedOrg)"
+                            class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Download JSON
+                    </button>
+                    <button @click="selectedOrg = null"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between text-sm text-gray-500">
+                <div>
+                    <a href="data/orgs.json" download class="text-blue-600 hover:text-blue-800">
+                        Download Full Dataset (JSON)
+                    </a>
+                </div>
+                <div>
+                    Built with ❤️ for the UK open data community
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/app.js"></script>
+    <script src="js/search.js"></script>
+    <script src="js/filters.js"></script>
+    <script src="js/pagination.js"></script>
+</body>
+</html>
