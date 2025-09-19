@@ -10,10 +10,8 @@ import { performance } from 'perf_hooks';
 // Import services
 import {
   FetcherService,
-  DeduplicatorService,
   WriterService,
   createFetcher,
-  createDeduplicator,
   createWriter
 } from '../services/index.js';
 import type { FetchResult } from '../services/index.js';
@@ -160,10 +158,6 @@ export interface WorkflowResult {
     dataMapping: WorkflowPhase & {
       mappedFields?: number;
     };
-    deduplication: WorkflowPhase & {
-      duplicatesFound?: number;
-      duplicatesResolved?: number;
-    };
     outputGeneration: WorkflowPhase & {
       filePath?: string;
       recordCount?: number;
@@ -230,7 +224,6 @@ export class Orchestrator {
   private fetcher: FetcherService;
   private simpleParser: SimpleParserService;
   private simpleMapper: SimpleMapperService;
-  private deduplicator: DeduplicatorService;
   private writer: WriterService;
   private nhsParser: NHSParser;
   private localAuthorityParser: LocalAuthorityParser;
@@ -268,11 +261,6 @@ export class Orchestrator {
     
     this.simpleParser = createSimpleParser();
     this.simpleMapper = createSimpleMapper();
-
-    this.deduplicator = createDeduplicator({
-      conflictResolutionStrategy: 'most_complete',
-      trackProvenance: true
-    });
 
     this.writer = createWriter({
       outputPath: this.config.outputPath || 'dist/orgs.json',
@@ -1991,15 +1979,8 @@ export class Orchestrator {
       // Track memory after fetching
       this.trackMemory();
 
-      // Deduplicate organisations
-      this.logger.subsection('Deduplicating organisations');
-      this.logger.startProgress('Processing duplicates...', allOrganisations.length);
-      
-      const dedupResult = this.deduplicator.deduplicate(allOrganisations);
-      
-      this.logger.stopProgress(
-        `Deduplication complete: ${dedupResult.originalCount - dedupResult.deduplicatedCount} duplicates merged`
-      );
+      // No deduplication - use all organisations as-is
+      const finalOrganisations = allOrganisations;
 
       // Track final memory usage
       this.trackMemory();
@@ -2011,7 +1992,7 @@ export class Orchestrator {
         source: source.includes('gov.uk') ? DataSourceType.GOV_UK_API :
                 source.includes('institutional') ? DataSourceType.ONS_INSTITUTIONAL :
                 DataSourceType.ONS_NON_INSTITUTIONAL,
-        recordCount: dedupResult.organisations.filter((org: Organisation) =>
+        recordCount: finalOrganisations.filter((org: Organisation) =>
           org.sources && org.sources.some((s: DataSourceReference) => s.source.toString() === source.replace('-units', '').replace('.uk-api', '_uk_api').replace('-', '_'))
         ).length,
         retrievedAt: new Date().toISOString()
@@ -2019,8 +2000,7 @@ export class Orchestrator {
 
       // Calculate statistics
       const stats: ProcessingStatistics = {
-        totalOrganisations: dedupResult.organisations.length,
-        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
+        totalOrganisations: finalOrganisations.length,
         conflictsDetected: 0,
         organisationsByType: {} as Record<OrganisationType, number>
       };
@@ -2028,7 +2008,7 @@ export class Orchestrator {
       // Count by type
       for (const orgType in OrganisationType) {
         const typeValue = OrganisationType[orgType as keyof typeof OrganisationType];
-        stats.organisationsByType[typeValue] = dedupResult.organisations.filter(
+        stats.organisationsByType[typeValue] = finalOrganisations.filter(
           (org: Organisation) => org.type === typeValue
         ).length;
       }
@@ -2041,15 +2021,14 @@ export class Orchestrator {
       
       this.logger.section('Aggregation Complete');
       this.logger.info('Summary:', {
-        totalRecords: dedupResult.organisations.length,
+        totalRecords: finalOrganisations.length,
         sources: sources,
-        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
         processingTimeMs: Math.round(duration),
         peakMemoryMB: Math.round(this.peakMemory)
       });
 
       // Consider aggregation successful if we got any data, even if some sources failed
-      const hasData = dedupResult.organisations.length > 0;
+      const hasData = finalOrganisations.length > 0;
 
       // Log errors if any - TREAT AS ERROR NOT WARNING
       if (errors.length > 0) {
@@ -2111,8 +2090,8 @@ export class Orchestrator {
       return {
         success: hasData && errors.length === 0,  // Only succeed if ALL sources succeeded
         sources,
-        organisations: dedupResult.organisations,
-        totalRecords: dedupResult.organisations.length,
+        organisations: finalOrganisations,
+        totalRecords: finalOrganisations.length,
         metadata,
         performance: {
           memoryUsed: process.memoryUsage().heapUsed,
@@ -2229,9 +2208,6 @@ export class Orchestrator {
           onsNonInstitutional: { success: false }
         },
         dataMapping: {
-          success: false
-        },
-        deduplication: {
           success: false
         },
         outputGeneration: {
@@ -2387,15 +2363,8 @@ export class Orchestrator {
         mappedFields: 10 // Standard fields mapped
       };
 
-      // Phase 3: Deduplication
-      this.logger.subsection('Phase 3: Deduplication');
-      const dedupResult = this.deduplicator.deduplicate(allOrganisations);
-      
-      result.phases.deduplication = {
-        success: true,
-        duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
-        duplicatesResolved: dedupResult.originalCount - dedupResult.deduplicatedCount
-      };
+      // No deduplication - use all organisations as-is
+      const finalOrganisations = allOrganisations;
 
       // Phase 4: Output Generation
       this.logger.subsection('Phase 4: Output Generation');
@@ -2412,22 +2381,21 @@ export class Orchestrator {
           { source: DataSourceType.GIAS, recordCount: schoolsData.organisations?.length || 0, retrievedAt: new Date().toISOString() }
         ],
         statistics: {
-          totalOrganisations: dedupResult.organisations.length,
-          duplicatesFound: dedupResult.originalCount - dedupResult.deduplicatedCount,
-          conflictsDetected: 0,
+          totalOrganisations: finalOrganisations.length,
+            conflictsDetected: 0,
           organisationsByType: {} as Record<OrganisationType, number>
         }
       };
       
       const outputPath = await this.writer.writeResult({
-        organisations: dedupResult.organisations,
+        organisations: finalOrganisations,
         metadata
       });
-      
+
       result.phases.outputGeneration = {
         success: true,
         filePath: outputPath,
-        recordCount: dedupResult.organisations.length
+        recordCount: finalOrganisations.length
       };
 
       // Set overall success
@@ -2437,7 +2405,7 @@ export class Orchestrator {
       
       this.logger.success('Workflow completed successfully', {
         duration: `${(result.totalDurationMs / 1000).toFixed(2)}s`,
-        totalRecords: dedupResult.organisations.length
+        totalRecords: finalOrganisations.length
       });
 
     } catch (error) {
@@ -2504,11 +2472,6 @@ export class Orchestrator {
             govUk: { success: true },
             onsInstitutional: { success: true },
             onsNonInstitutional: { success: true }
-          },
-          deduplication: {
-            success: true,
-            duplicatesFound: aggregationResult.metadata?.statistics?.duplicatesFound || 0,
-            finalCount: aggregationResult.organisations.length
           },
           outputGeneration: {
             success: true,

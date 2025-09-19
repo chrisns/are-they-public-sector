@@ -73,7 +73,6 @@ export interface SourceMetadata {
  */
 export interface ProcessingStatistics {
   totalOrganisations: number;
-  duplicatesFound: number;
   conflictsDetected: number;
   organisationsByType: Record<OrganisationType, number>;
 }
@@ -122,18 +121,6 @@ export interface BatchProcessingStatus {
   errors?: ProcessingError[];
 }
 
-/**
- * Deduplication result
- */
-export interface DeduplicationResult {
-  originalCount: number;
-  deduplicatedCount: number;
-  mergedRecords: Array<{
-    mergedIds: string[];
-    resultingId: string;
-    confidence: number;
-  }>;
-}
 
 /**
  * Validation result for a single record

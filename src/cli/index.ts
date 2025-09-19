@@ -202,7 +202,6 @@ async function runAggregation(options: CliOptions): Promise<void> {
       logger.info(`  • Output: ${outputPath}`);
       logger.info(`  • Records collected: ${totalRecords}`);
       logger.info(`  • Sources: ${result.metadata?.sources?.length || 3} sources`);
-      logger.info(`  • Duplicates merged: ${result.metadata?.statistics?.duplicatesFound || 0}`);
       logger.info(`  • Processing time: ${duration.toFixed(2)}s`);
 
       // Check and report file size

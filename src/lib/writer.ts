@@ -128,7 +128,6 @@ export class WriterService {
         sources: [],
         statistics: {
           totalOrganisations: organisations.length,
-          duplicatesFound: 0,
           conflictsDetected: 0,
           organisationsByType: this.countByType(organisations)
         }
