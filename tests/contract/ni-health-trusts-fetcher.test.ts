@@ -153,7 +153,7 @@ describe('NIHealthTrustsFetcher Contract Tests', () => {
         return Promise.resolve({ data: mockMainHtml });
       });
 
-      const result = await fetcher.fetch();
+      await fetcher.fetch();
 
       // Should have called twice if following detail pages
       expect(mockedAxios.get.mock.calls.length).toBeGreaterThanOrEqual(1);

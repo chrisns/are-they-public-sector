@@ -108,7 +108,7 @@ describe('NIGovernmentDeptsFetcher Contract', () => {
 
     it('should handle network errors with retry mechanism', async () => {
       // Mock network error scenario
-      jest.spyOn(fetcher as any, 'fetchWithRetry').mockRejectedValueOnce(new Error('Network error'));
+      jest.spyOn(fetcher as unknown as { fetchWithRetry: jest.Mock }, 'fetchWithRetry').mockRejectedValueOnce(new Error('Network error'));
 
       const result = await fetcher.fetch();
 

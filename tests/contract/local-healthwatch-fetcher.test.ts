@@ -52,7 +52,7 @@ describe('LocalHealthwatchFetcher Contract', () => {
 
     it('should handle pagination correctly', async () => {
       // Test that the fetcher can handle paginated responses
-      const spy = jest.spyOn(fetcher as any, 'fetchPage');
+      const spy = jest.spyOn(fetcher as unknown as { fetchWithRetry: jest.Mock }, 'fetchPage');
       
       await fetcher.fetch();
 
@@ -79,7 +79,7 @@ describe('LocalHealthwatchFetcher Contract', () => {
 
   describe('fetchPage', () => {
     it('should fetch individual pages', async () => {
-      const result = await (fetcher as any).fetchPage(1);
+      const result = await (fetcher as unknown as { fetchPage: (page: number) => Promise<unknown> }).fetchPage(1);
 
       expect(result).toBeDefined();
       expect(result.currentPage).toBe(1);
@@ -88,7 +88,7 @@ describe('LocalHealthwatchFetcher Contract', () => {
     });
 
     it('should indicate when more pages exist', async () => {
-      const firstPage = await (fetcher as any).fetchPage(1) as PaginatedResponse<HealthOrganisationData>;
+      const firstPage = await (fetcher as unknown as { fetchPage: (page: number) => Promise<PaginatedResponse<HealthOrganisationData>> }).fetchPage(1);
 
       expect(firstPage.hasNextPage).toBeDefined();
       expect(typeof firstPage.hasNextPage).toBe('boolean');

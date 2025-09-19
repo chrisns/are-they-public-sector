@@ -18,7 +18,7 @@ export class LocalHealthwatchFetcher {
       let allHealthwatch: HealthOrganisationData[] = [];
       let currentPage = 1;
       let hasNextPage = true;
-      let totalPages = 0;
+      // let totalPages = 0; // Unused but tracked for future use
 
       while (hasNextPage && currentPage <= 10) { // Safety limit
         const pageResponse = await this.fetchPage(currentPage);
@@ -255,7 +255,7 @@ export class LocalHealthwatchFetcher {
     return pageNumbers.length > 0 ? Math.max(...pageNumbers) : undefined;
   }
 
-  private async fetchWithRetry(url: string, attempt = 0): Promise<any> {
+  private async fetchWithRetry(url: string, attempt = 0): Promise<unknown> {
     try {
       const response = await axios.get(url, {
         timeout: 30000,

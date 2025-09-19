@@ -93,14 +93,14 @@ export class EnglishUnitaryAuthoritiesFetcher {
 
       for (const record of records) {
         // Try different possible column names for the authority name and code
-        const name = record['Name'] ||
+        const name = (record as Record<string, unknown>)['Name'] ||
                     record['Authority'] ||
                     record['Local Authority'] ||
                     record['Unitary Authority'] ||
                     record['LA Name'] ||
-                    Object.values(record).find((v: any) => typeof v === 'string' && v.length > 0);
+                    Object.values(record).find((v) => typeof v === 'string' && v.length > 0);
 
-        const code = record['Code'] ||
+        const code = (record as Record<string, unknown>)['Code'] ||
                     record['ONS Code'] ||
                     record['LA Code'] ||
                     record['Authority Code'] ||
@@ -122,7 +122,7 @@ export class EnglishUnitaryAuthoritiesFetcher {
     }
   }
 
-  private async fetchWithRetry(url: string, attempt = 0): Promise<any> {
+  private async fetchWithRetry(url: string, attempt = 0): Promise<unknown> {
     try {
       const response = await axios.get(url, {
         timeout: 30000,
@@ -141,7 +141,9 @@ export class EnglishUnitaryAuthoritiesFetcher {
     }
   }
 
-  private async fetchPage(_page: number): Promise<any> {
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async fetchPage(_page: number): Promise<unknown> {
     // Not used for this fetcher but might be needed for mocking in tests
     return null;
   }

@@ -119,7 +119,7 @@ export interface GenericOrganisationData {
   type?: string;
   region?: Region;
   website?: string;
-  additionalInfo?: Record<string, any>;
+  additionalInfo?: Record<string, unknown>;
 }
 
 /**

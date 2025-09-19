@@ -118,7 +118,7 @@ export class DistrictsOfEnglandFetcher {
     return undefined;
   }
 
-  private async fetchWithRetry(url: string, attempt = 0): Promise<any> {
+  private async fetchWithRetry(url: string, attempt = 0): Promise<unknown> {
     try {
       const response = await axios.get(url, {
         timeout: 30000,
@@ -137,7 +137,9 @@ export class DistrictsOfEnglandFetcher {
     }
   }
 
-  private async fetchPage(_page: number): Promise<any> {
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async fetchPage(_page: number): Promise<unknown> {
     // Not used for this fetcher but required for interface compatibility
     return null;
   }

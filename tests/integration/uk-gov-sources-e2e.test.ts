@@ -5,7 +5,7 @@
 
 import { EnglishUnitaryAuthoritiesFetcher } from '../../src/services/fetchers/english-unitary-authorities-fetcher';
 import { UnitaryAuthorityMapper } from '../../src/services/mappers/unitary-authority-mapper';
-import { DataSource } from '../../src/models/data-source';
+// import { DataSource } from '../../src/models/data-source';
 import { OrganisationType } from '../../src/models/organisation';
 import axios from 'axios';
 

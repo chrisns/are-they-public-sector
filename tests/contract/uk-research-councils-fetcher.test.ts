@@ -113,7 +113,7 @@ describe('UKResearchCouncilsFetcher Contract', () => {
 
     it('should handle network errors with retry mechanism', async () => {
       // Mock network error scenario
-      jest.spyOn(fetcher as any, 'fetchWithRetry').mockRejectedValueOnce(new Error('Network error'));
+      jest.spyOn(fetcher as unknown as { fetchWithRetry: jest.Mock }, 'fetchWithRetry').mockRejectedValueOnce(new Error('Network error'));
 
       const result = await fetcher.fetch();
 
@@ -166,9 +166,9 @@ describe('UKResearchCouncilsFetcher Contract', () => {
       expect(result.success).toBe(true);
 
       // Should focus on research councils, not include Innovate UK or Research England separately
-      const nonCouncilBodies = result.data!.filter((council: ResearchCouncilData) =>
-        council.name.includes('Innovate UK') || council.name.includes('Research England')
-      );
+      // const nonCouncilBodies = result.data!.filter((council: ResearchCouncilData) =>
+      //   council.name.includes('Innovate UK') || council.name.includes('Research England')
+      // );
 
       // These might be included or might be separate - the test allows for either
       expect(result.data!.length).toBeGreaterThanOrEqual(7);

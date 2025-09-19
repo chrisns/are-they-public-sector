@@ -23,7 +23,7 @@ export class NationalParkAuthoritiesFetcher {
       // Look for park listings in various formats
       $('article, .park-item, .member-item, .content-block').each((_, element) => {
         const $element = $(element);
-        const text = $element.text();
+        // const text = $element.text(); // Unused
 
         // Look for headings or titles containing park names
         $element.find('h1, h2, h3, h4, .title, .name').each((_, titleElement) => {
@@ -168,7 +168,7 @@ export class NationalParkAuthoritiesFetcher {
     }
   }
 
-  private async fetchWithRetry(url: string, attempt = 0): Promise<any> {
+  private async fetchWithRetry(url: string, attempt = 0): Promise<unknown> {
     try {
       const response = await axios.get(url, {
         timeout: 30000,
@@ -187,7 +187,9 @@ export class NationalParkAuthoritiesFetcher {
     }
   }
 
-  private async fetchPage(_page: number): Promise<any> {
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private async fetchPage(_page: number): Promise<unknown> {
     // Not used for this fetcher but required for interface compatibility
     return null;
   }
