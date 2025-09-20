@@ -332,29 +332,70 @@ function app() {
             }
         },
 
-        // Create data visualization charts
+        /**
+         * Creates data visualization charts with fixed dimensions.
+         *
+         * IMPORTANT: Charts use fixed 250x250px dimensions to prevent infinite growth bug
+         * that occurred with Chart.js responsive mode. The following measures are in place:
+         * 1. Canvas elements have explicit width/height attributes
+         * 2. JavaScript forces canvas dimensions before chart creation
+         * 3. Chart.js responsive mode is disabled
+         * 4. Container has overflow:hidden as final safeguard
+         *
+         * See commits 128d7a4, e25b69e, 552d763 for history of this issue.
+         */
         createCharts() {
             // Prevent multiple chart creations
             if (this.chartsCreated) return;
 
+            // Helper function to force canvas size
+            const forceCanvasSize = (canvas, size = 250) => {
+                if (!canvas) return;
+                canvas.width = size;
+                canvas.height = size;
+                canvas.style.width = `${size}px`;
+                canvas.style.height = `${size}px`;
+            };
+
+            // Helper function to destroy chart and clear canvas
+            const destroyChart = (chartProperty) => {
+                if (this[chartProperty]) {
+                    this[chartProperty].destroy();
+                    this[chartProperty] = null;
+                }
+            };
+
             // Destroy existing charts if they exist
-            if (this.regionChart) {
-                this.regionChart.destroy();
-                this.regionChart = null;
-            }
-            if (this.sourceChart) {
-                this.sourceChart.destroy();
-                this.sourceChart = null;
-            }
-            if (this.statusChart) {
-                this.statusChart.destroy();
-                this.statusChart = null;
-            }
+            destroyChart('regionChart');
+            destroyChart('sourceChart');
+            destroyChart('statusChart');
 
             // Chart.js defaults
             Chart.defaults.font.size = 11;
             Chart.defaults.plugins.legend.display = false;
             Chart.defaults.responsive = false;
+
+            // Shared chart configuration to prevent duplication
+            const sharedChartOptions = {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed;
+                                const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            };
 
             // Regional Distribution Chart
             const regionCanvas = document.getElementById('regionChart');
@@ -363,12 +404,7 @@ function app() {
                     .filter(([region]) => region !== 'Unknown')
                     .sort((a, b) => b[1] - a[1]);
 
-                // Force canvas size
-                regionCanvas.width = 250;
-                regionCanvas.height = 250;
-                regionCanvas.style.width = '250px';
-                regionCanvas.style.height = '250px';
-
+                forceCanvasSize(regionCanvas);
                 const regionCtx = regionCanvas.getContext('2d');
                 this.regionChart = new Chart(regionCtx, {
                     type: 'doughnut',
@@ -395,26 +431,7 @@ function app() {
                             borderWidth: 1
                         }]
                     },
-                    options: {
-                        responsive: false,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed;
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    options: { ...sharedChartOptions }
                 });
             }
 
@@ -425,12 +442,7 @@ function app() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 8); // Limit to top 8 sources for pie chart
 
-                // Force canvas size
-                sourceCanvas.width = 250;
-                sourceCanvas.height = 250;
-                sourceCanvas.style.width = '250px';
-                sourceCanvas.style.height = '250px';
-
+                forceCanvasSize(sourceCanvas);
                 const sourceCtx = sourceCanvas.getContext('2d');
                 this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
@@ -461,26 +473,7 @@ function app() {
                             borderWidth: 1
                         }]
                     },
-                    options: {
-                        responsive: false,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed;
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    options: { ...sharedChartOptions }
                 });
             }
 
@@ -504,12 +497,7 @@ function app() {
                     'unknown': 'rgba(156, 163, 175, 1)'
                 };
 
-                // Force canvas size
-                statusCanvas.width = 250;
-                statusCanvas.height = 250;
-                statusCanvas.style.width = '250px';
-                statusCanvas.style.height = '250px';
-
+                forceCanvasSize(statusCanvas);
                 const statusCtx = statusCanvas.getContext('2d');
                 this.statusChart = new Chart(statusCtx, {
                     type: 'pie',
@@ -522,26 +510,7 @@ function app() {
                             borderWidth: 1
                         }]
                     },
-                    options: {
-                        responsive: false,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.parsed;
-                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    options: { ...sharedChartOptions }
                 });
             }
         }
