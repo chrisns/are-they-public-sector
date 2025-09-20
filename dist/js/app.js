@@ -30,6 +30,7 @@ function app() {
         organisationTypes: [],
         typeBreakdown: {},
         fileSizeMB: '0',
+        chartsReady: false,
 
         // Initialize the application
         async init() {
@@ -187,7 +188,11 @@ function app() {
             }
 
             // Create charts after calculating statistics
-            setTimeout(() => this.createCharts(), 100);
+            this.chartsReady = false;
+            setTimeout(() => {
+                this.createCharts();
+                this.chartsReady = true;
+            }, 100);
         },
 
         // Perform search using Fuse.js
@@ -367,7 +372,8 @@ function app() {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1,
                         plugins: {
                             legend: {
                                 display: true,
@@ -433,7 +439,8 @@ function app() {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1,
                         plugins: {
                             legend: {
                                 display: true,
@@ -494,7 +501,8 @@ function app() {
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1,
                         plugins: {
                             legend: {
                                 display: true,
