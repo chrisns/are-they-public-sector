@@ -59,8 +59,12 @@ function app() {
                     console.warn('Metadata not available:', metaErr);
                 }
 
-                // Load main data
-                const response = await fetch('data/orgs.json');
+                // Load main data - try compressed version first
+                let response = await fetch('data/orgs.json.gz');
+                if (!response.ok) {
+                    // Fallback to uncompressed version
+                    response = await fetch('data/orgs.json');
+                }
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
