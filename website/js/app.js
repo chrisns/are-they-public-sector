@@ -146,16 +146,37 @@ function app() {
             // Get unique organisation types
             const types = new Set();
             const typeCount = {};
+            const regionCount = {};
+            const statusCount = {};
+            const sourceCount = {};
 
             this.organisations.forEach(org => {
                 if (org.type) {
                     types.add(org.type);
                     typeCount[org.type] = (typeCount[org.type] || 0) + 1;
                 }
+
+                // Count by region
+                const region = org.region || 'Unknown';
+                regionCount[region] = (regionCount[region] || 0) + 1;
+
+                // Count by status
+                const status = org.status || 'unknown';
+                statusCount[status] = (statusCount[status] || 0) + 1;
+
+                // Count by sources
+                if (org.sources && org.sources.length > 0) {
+                    org.sources.forEach(source => {
+                        sourceCount[source.source] = (sourceCount[source.source] || 0) + 1;
+                    });
+                }
             });
 
             this.organisationTypes = Array.from(types).sort();
             this.typeBreakdown = typeCount;
+            this.regionBreakdown = regionCount;
+            this.statusBreakdown = statusCount;
+            this.sourceBreakdown = sourceCount;
 
             // Calculate file size if not from metadata
             if (!this.fileSizeMB || this.fileSizeMB === '0') {
@@ -164,6 +185,9 @@ function app() {
                 const sizeInBytes = new Blob([jsonString]).size;
                 this.fileSizeMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
             }
+
+            // Create charts after calculating statistics
+            setTimeout(() => this.createCharts(), 100);
         },
 
         // Perform search using Fuse.js
@@ -295,6 +319,237 @@ function app() {
                 case 'inactive': return 'status-inactive';
                 case 'dissolved': return 'status-dissolved';
                 default: return 'text-gray-500';
+            }
+        },
+
+        // Create data visualization charts
+        createCharts() {
+            // Destroy existing charts if they exist
+            if (this.typeChart) this.typeChart.destroy();
+            if (this.regionChart) this.regionChart.destroy();
+            if (this.sourceChart) this.sourceChart.destroy();
+            if (this.statusChart) this.statusChart.destroy();
+
+            // Chart.js defaults
+            Chart.defaults.font.size = 11;
+            Chart.defaults.plugins.legend.display = false;
+
+            // Organisation Types Chart
+            const typeCtx = document.getElementById('typeChart');
+            if (typeCtx) {
+                const topTypes = Object.entries(this.typeBreakdown)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                this.typeChart = new Chart(typeCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: topTypes.map(([type]) => this.formatType(type)),
+                        datasets: [{
+                            data: topTypes.map(([, count]) => count),
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y.toLocaleString() + ' organisations';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Regional Distribution Chart
+            const regionCtx = document.getElementById('regionChart');
+            if (regionCtx) {
+                const regions = Object.entries(this.regionBreakdown)
+                    .filter(([region]) => region !== 'Unknown')
+                    .sort((a, b) => b[1] - a[1]);
+
+                this.regionChart = new Chart(regionCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: regions.map(([region]) => region),
+                        datasets: [{
+                            data: regions.map(([, count]) => count),
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.5)',
+                                'rgba(34, 197, 94, 0.5)',
+                                'rgba(168, 85, 247, 0.5)',
+                                'rgba(251, 146, 60, 0.5)',
+                                'rgba(239, 68, 68, 0.5)',
+                                'rgba(14, 165, 233, 0.5)'
+                            ],
+                            borderColor: [
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(34, 197, 94, 1)',
+                                'rgba(168, 85, 247, 1)',
+                                'rgba(251, 146, 60, 1)',
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(14, 165, 233, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Data Sources Chart
+            const sourceCtx = document.getElementById('sourceChart');
+            if (sourceCtx) {
+                const topSources = Object.entries(this.sourceBreakdown)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10);
+
+                this.sourceChart = new Chart(sourceCtx, {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: topSources.map(([source]) => source),
+                        datasets: [{
+                            data: topSources.map(([, count]) => count),
+                            backgroundColor: 'rgba(168, 85, 247, 0.5)',
+                            borderColor: 'rgba(168, 85, 247, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.x.toLocaleString() + ' organisations';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Status Distribution Chart
+            const statusCtx = document.getElementById('statusChart');
+            if (statusCtx) {
+                const statuses = Object.entries(this.statusBreakdown)
+                    .sort((a, b) => b[1] - a[1]);
+
+                const statusColors = {
+                    'active': 'rgba(34, 197, 94, 0.5)',
+                    'inactive': 'rgba(251, 146, 60, 0.5)',
+                    'dissolved': 'rgba(239, 68, 68, 0.5)',
+                    'unknown': 'rgba(156, 163, 175, 0.5)'
+                };
+
+                const statusBorderColors = {
+                    'active': 'rgba(34, 197, 94, 1)',
+                    'inactive': 'rgba(251, 146, 60, 1)',
+                    'dissolved': 'rgba(239, 68, 68, 1)',
+                    'unknown': 'rgba(156, 163, 175, 1)'
+                };
+
+                this.statusChart = new Chart(statusCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: statuses.map(([status]) => status.charAt(0).toUpperCase() + status.slice(1)),
+                        datasets: [{
+                            data: statuses.map(([, count]) => count),
+                            backgroundColor: statuses.map(([status]) => statusColors[status] || 'rgba(156, 163, 175, 0.5)'),
+                            borderColor: statuses.map(([status]) => statusBorderColors[status] || 'rgba(156, 163, 175, 1)'),
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
             }
         }
     };
