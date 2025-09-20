@@ -48,7 +48,11 @@ jobs:
     - name: Compile organisation data
       run: |
         echo "Compiling organisation data..."
-        npx tsx src/cli/index.ts --continue-on-error || echo "Compile completed with some errors"
+        # Create dummy test file to prevent colleges source from failing
+        mkdir -p test/data
+        echo "%PDF-1.4 dummy" > test/data/05-versions-space.pdf
+
+        npx tsx src/cli/index.ts || echo "Compile completed with some errors"
 
         # Check if the file was created
         if [ ! -f "dist/orgs.json" ]; then
