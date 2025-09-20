@@ -87,11 +87,9 @@ jobs:
 
     - name: Build website
       run: |
-        # Copy data file to website directory
-        cp dist/orgs.json website/data/ 2>/dev/null || mkdir -p website/data && cp dist/orgs.json website/data/
-
-        # Generate metadata file
-        cat > website/data/metadata.json << EOF
+        # Generate metadata file if not exists
+        if [ ! -f "dist/metadata.json" ]; then
+          cat > dist/metadata.json << EOF
         {
           "lastUpdated": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
           "organisationCount": $(jq '.organisations | length' dist/orgs.json),
@@ -99,9 +97,9 @@ jobs:
           "githubRepo": "${{ github.repository }}"
         }
         EOF
+        fi
 
-        # Install Tailwind CSS via CDN (no build needed for now)
-        # The website will use CDN versions of all libraries
+        # Website files are already in dist/
 
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -109,7 +107,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: './website'
+        path: './dist'
 
   deploy:
     environment:

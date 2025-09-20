@@ -2,7 +2,8 @@
 node_modules/
 
 # Build outputs
-dist/
+dist/orgs.json
+dist/metadata.json
 build/
 *.tsbuildinfo
 
@@ -80,7 +81,6 @@ temp/
 .storybook-out
 
 # rollup.js default build output
-dist/
 data
 
 # Cleanup - prevent caching and test files in root
