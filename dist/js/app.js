@@ -325,7 +325,6 @@ function app() {
         // Create data visualization charts
         createCharts() {
             // Destroy existing charts if they exist
-            if (this.typeChart) this.typeChart.destroy();
             if (this.regionChart) this.regionChart.destroy();
             if (this.sourceChart) this.sourceChart.destroy();
             if (this.statusChart) this.statusChart.destroy();
@@ -333,56 +332,6 @@ function app() {
             // Chart.js defaults
             Chart.defaults.font.size = 11;
             Chart.defaults.plugins.legend.display = false;
-
-            // Organisation Types Chart
-            const typeCtx = document.getElementById('typeChart');
-            if (typeCtx) {
-                const topTypes = Object.entries(this.typeBreakdown)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10);
-
-                this.typeChart = new Chart(typeCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: topTypes.map(([type]) => this.formatType(type)),
-                        datasets: [{
-                            data: topTypes.map(([, count]) => count),
-                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString();
-                                    }
-                                }
-                            },
-                            x: {
-                                ticks: {
-                                    maxRotation: 45,
-                                    minRotation: 45
-                                }
-                            }
-                        },
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        return context.parsed.y.toLocaleString() + ' organisations';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
 
             // Regional Distribution Chart
             const regionCtx = document.getElementById('regionChart');
