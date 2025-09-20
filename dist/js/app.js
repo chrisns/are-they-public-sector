@@ -400,38 +400,59 @@ function app() {
             if (sourceCtx) {
                 const topSources = Object.entries(this.sourceBreakdown)
                     .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10);
+                    .slice(0, 8); // Limit to top 8 sources for pie chart
 
                 this.sourceChart = new Chart(sourceCtx, {
-                    type: 'horizontalBar',
+                    type: 'pie',
                     data: {
                         labels: topSources.map(([source]) => source),
                         datasets: [{
                             data: topSources.map(([, count]) => count),
-                            backgroundColor: 'rgba(168, 85, 247, 0.5)',
-                            borderColor: 'rgba(168, 85, 247, 1)',
+                            backgroundColor: [
+                                'rgba(168, 85, 247, 0.5)',
+                                'rgba(239, 68, 68, 0.5)',
+                                'rgba(34, 197, 94, 0.5)',
+                                'rgba(59, 130, 246, 0.5)',
+                                'rgba(251, 146, 60, 0.5)',
+                                'rgba(14, 165, 233, 0.5)',
+                                'rgba(236, 72, 153, 0.5)',
+                                'rgba(156, 163, 175, 0.5)'
+                            ],
+                            borderColor: [
+                                'rgba(168, 85, 247, 1)',
+                                'rgba(239, 68, 68, 1)',
+                                'rgba(34, 197, 94, 1)',
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(251, 146, 60, 1)',
+                                'rgba(14, 165, 233, 1)',
+                                'rgba(236, 72, 153, 1)',
+                                'rgba(156, 163, 175, 1)'
+                            ],
                             borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: {
-                                    callback: function(value) {
-                                        return value.toLocaleString();
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'right',
+                                labels: {
+                                    padding: 10,
+                                    font: {
+                                        size: 11
                                     }
                                 }
-                            }
-                        },
-                        plugins: {
+                            },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return context.parsed.x.toLocaleString() + ' organisations';
+                                        const label = context.label || '';
+                                        const value = context.parsed;
+                                        const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return label + ': ' + value.toLocaleString() + ' (' + percentage + '%)';
                                     }
                                 }
                             }
