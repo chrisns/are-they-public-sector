@@ -87,28 +87,28 @@
                 </div>
 
                 <!-- Data Visualizations -->
-                <div class="bg-white rounded-lg shadow mb-6 p-6" x-show="chartsReady">
+                <div class="bg-white rounded-lg shadow mb-6 p-6" x-show="chartsReady" style="max-height: 400px; overflow: hidden;">
                     <h2 class="text-lg font-semibold mb-4">Data Insights</h2>
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <!-- Regional Distribution Chart -->
-                        <div>
+                        <div class="relative">
                             <h3 class="text-sm font-medium text-gray-700 mb-3">Regional Distribution</h3>
-                            <div style="width: 250px; height: 250px; margin: 0 auto;">
-                                <canvas id="regionChart" width="250" height="250"></canvas>
+                            <div class="chart-container" style="position: relative; width: 250px; height: 250px; margin: 0 auto; overflow: hidden;">
+                                <canvas id="regionChart" style="position: absolute; top: 0; left: 0; width: 250px !important; height: 250px !important; max-width: 250px !important; max-height: 250px !important;"></canvas>
                             </div>
                         </div>
                         <!-- Data Sources Chart -->
-                        <div>
+                        <div class="relative">
                             <h3 class="text-sm font-medium text-gray-700 mb-3">Top Data Sources</h3>
-                            <div style="width: 250px; height: 250px; margin: 0 auto;">
-                                <canvas id="sourceChart" width="250" height="250"></canvas>
+                            <div class="chart-container" style="position: relative; width: 250px; height: 250px; margin: 0 auto; overflow: hidden;">
+                                <canvas id="sourceChart" style="position: absolute; top: 0; left: 0; width: 250px !important; height: 250px !important; max-width: 250px !important; max-height: 250px !important;"></canvas>
                             </div>
                         </div>
                         <!-- Status Distribution Chart -->
-                        <div>
+                        <div class="relative">
                             <h3 class="text-sm font-medium text-gray-700 mb-3">Organisation Status</h3>
-                            <div style="width: 250px; height: 250px; margin: 0 auto;">
-                                <canvas id="statusChart" width="250" height="250"></canvas>
+                            <div class="chart-container" style="position: relative; width: 250px; height: 250px; margin: 0 auto; overflow: hidden;">
+                                <canvas id="statusChart" style="position: absolute; top: 0; left: 0; width: 250px !important; height: 250px !important; max-width: 250px !important; max-height: 250px !important;"></canvas>
                             </div>
                         </div>
                     </div>

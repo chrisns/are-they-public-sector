@@ -31,6 +31,7 @@ function app() {
         typeBreakdown: {},
         fileSizeMB: '0',
         chartsReady: false,
+        chartsCreated: false,
 
         // Initialize the application
         async init() {
@@ -189,10 +190,14 @@ function app() {
 
             // Create charts after calculating statistics
             this.chartsReady = false;
-            setTimeout(() => {
-                this.createCharts();
-                this.chartsReady = true;
-            }, 100);
+            // Use requestAnimationFrame to ensure DOM is ready
+            requestAnimationFrame(() => {
+                if (!this.chartsCreated) {
+                    this.createCharts();
+                    this.chartsCreated = true;
+                    this.chartsReady = true;
+                }
+            });
         },
 
         // Perform search using Fuse.js
@@ -329,10 +334,22 @@ function app() {
 
         // Create data visualization charts
         createCharts() {
+            // Prevent multiple chart creations
+            if (this.chartsCreated) return;
+
             // Destroy existing charts if they exist
-            if (this.regionChart) this.regionChart.destroy();
-            if (this.sourceChart) this.sourceChart.destroy();
-            if (this.statusChart) this.statusChart.destroy();
+            if (this.regionChart) {
+                this.regionChart.destroy();
+                this.regionChart = null;
+            }
+            if (this.sourceChart) {
+                this.sourceChart.destroy();
+                this.sourceChart = null;
+            }
+            if (this.statusChart) {
+                this.statusChart.destroy();
+                this.statusChart = null;
+            }
 
             // Chart.js defaults
             Chart.defaults.font.size = 11;
@@ -340,14 +357,19 @@ function app() {
             Chart.defaults.responsive = false;
 
             // Regional Distribution Chart
-            const regionCtx = document.getElementById('regionChart');
-            if (regionCtx) {
+            const regionCanvas = document.getElementById('regionChart');
+            if (regionCanvas && regionCanvas.getContext) {
                 const regions = Object.entries(this.regionBreakdown)
                     .filter(([region]) => region !== 'Unknown')
                     .sort((a, b) => b[1] - a[1]);
 
-                regionCtx.width = 250;
-                regionCtx.height = 250;
+                // Force canvas size
+                regionCanvas.width = 250;
+                regionCanvas.height = 250;
+                regionCanvas.style.width = '250px';
+                regionCanvas.style.height = '250px';
+
+                const regionCtx = regionCanvas.getContext('2d');
                 this.regionChart = new Chart(regionCtx, {
                     type: 'doughnut',
                     data: {
@@ -397,14 +419,19 @@ function app() {
             }
 
             // Data Sources Chart
-            const sourceCtx = document.getElementById('sourceChart');
-            if (sourceCtx) {
+            const sourceCanvas = document.getElementById('sourceChart');
+            if (sourceCanvas && sourceCanvas.getContext) {
                 const topSources = Object.entries(this.sourceBreakdown)
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 8); // Limit to top 8 sources for pie chart
 
-                sourceCtx.width = 250;
-                sourceCtx.height = 250;
+                // Force canvas size
+                sourceCanvas.width = 250;
+                sourceCanvas.height = 250;
+                sourceCanvas.style.width = '250px';
+                sourceCanvas.style.height = '250px';
+
+                const sourceCtx = sourceCanvas.getContext('2d');
                 this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
                     data: {
@@ -458,8 +485,8 @@ function app() {
             }
 
             // Status Distribution Chart
-            const statusCtx = document.getElementById('statusChart');
-            if (statusCtx) {
+            const statusCanvas = document.getElementById('statusChart');
+            if (statusCanvas && statusCanvas.getContext) {
                 const statuses = Object.entries(this.statusBreakdown)
                     .sort((a, b) => b[1] - a[1]);
 
@@ -477,8 +504,13 @@ function app() {
                     'unknown': 'rgba(156, 163, 175, 1)'
                 };
 
-                statusCtx.width = 250;
-                statusCtx.height = 250;
+                // Force canvas size
+                statusCanvas.width = 250;
+                statusCanvas.height = 250;
+                statusCanvas.style.width = '250px';
+                statusCanvas.style.height = '250px';
+
+                const statusCtx = statusCanvas.getContext('2d');
                 this.statusChart = new Chart(statusCtx, {
                     type: 'pie',
                     data: {
