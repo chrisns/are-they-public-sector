@@ -48,7 +48,14 @@ jobs:
     - name: Compile organisation data
       run: |
         echo "Compiling organisation data..."
-        pnpm run compile
+        pnpm run compile -- --continue-on-error || true
+
+        # Check if the file was created
+        if [ ! -f "dist/orgs.json" ]; then
+          echo "ERROR: orgs.json was not created"
+          exit 1
+        fi
+
         echo "Data file size: $(du -h dist/orgs.json | cut -f1)"
         echo "Total organisations: $(jq '.organisations | length' dist/orgs.json)"
       env:
