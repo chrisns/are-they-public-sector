@@ -337,6 +337,7 @@ function app() {
             // Chart.js defaults
             Chart.defaults.font.size = 11;
             Chart.defaults.plugins.legend.display = false;
+            Chart.defaults.responsive = false;
 
             // Regional Distribution Chart
             const regionCtx = document.getElementById('regionChart');
@@ -345,6 +346,8 @@ function app() {
                     .filter(([region]) => region !== 'Unknown')
                     .sort((a, b) => b[1] - a[1]);
 
+                regionCtx.width = 250;
+                regionCtx.height = 250;
                 this.regionChart = new Chart(regionCtx, {
                     type: 'doughnut',
                     data: {
@@ -371,19 +374,11 @@ function app() {
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1,
+                        responsive: false,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: true,
-                                position: 'right',
-                                labels: {
-                                    padding: 10,
-                                    font: {
-                                        size: 11
-                                    }
-                                }
+                                display: false
                             },
                             tooltip: {
                                 callbacks: {
@@ -408,6 +403,8 @@ function app() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 8); // Limit to top 8 sources for pie chart
 
+                sourceCtx.width = 250;
+                sourceCtx.height = 250;
                 this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
                     data: {
@@ -438,19 +435,11 @@ function app() {
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1,
+                        responsive: false,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: true,
-                                position: 'right',
-                                labels: {
-                                    padding: 10,
-                                    font: {
-                                        size: 11
-                                    }
-                                }
+                                display: false
                             },
                             tooltip: {
                                 callbacks: {
@@ -488,6 +477,8 @@ function app() {
                     'unknown': 'rgba(156, 163, 175, 1)'
                 };
 
+                statusCtx.width = 250;
+                statusCtx.height = 250;
                 this.statusChart = new Chart(statusCtx, {
                     type: 'pie',
                     data: {
@@ -500,19 +491,11 @@ function app() {
                         }]
                     },
                     options: {
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1,
+                        responsive: false,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: true,
-                                position: 'right',
-                                labels: {
-                                    padding: 10,
-                                    font: {
-                                        size: 11
-                                    }
-                                }
+                                display: false
                             },
                             tooltip: {
                                 callbacks: {
