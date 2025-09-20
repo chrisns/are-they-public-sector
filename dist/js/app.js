@@ -348,15 +348,6 @@ function app() {
             // Prevent multiple chart creations
             if (this.chartsCreated) return;
 
-            // Helper function to force canvas size
-            const forceCanvasSize = (canvas, size = 250) => {
-                if (!canvas) return;
-                canvas.width = size;
-                canvas.height = size;
-                canvas.style.width = `${size}px`;
-                canvas.style.height = `${size}px`;
-            };
-
             // Helper function to destroy chart and clear canvas
             const destroyChart = (chartProperty) => {
                 if (this[chartProperty]) {
@@ -373,12 +364,12 @@ function app() {
             // Chart.js defaults
             Chart.defaults.font.size = 11;
             Chart.defaults.plugins.legend.display = false;
-            Chart.defaults.responsive = false;
+            Chart.defaults.responsive = true;
 
             // Shared chart configuration to prevent duplication
             const sharedChartOptions = {
-                responsive: false,
-                maintainAspectRatio: false,
+                responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
                     legend: {
                         display: false
@@ -404,7 +395,6 @@ function app() {
                     .filter(([region]) => region !== 'Unknown')
                     .sort((a, b) => b[1] - a[1]);
 
-                forceCanvasSize(regionCanvas);
                 const regionCtx = regionCanvas.getContext('2d');
                 this.regionChart = new Chart(regionCtx, {
                     type: 'doughnut',
@@ -442,7 +432,6 @@ function app() {
                     .sort((a, b) => b[1] - a[1])
                     .slice(0, 8); // Limit to top 8 sources for pie chart
 
-                forceCanvasSize(sourceCanvas);
                 const sourceCtx = sourceCanvas.getContext('2d');
                 this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
@@ -497,7 +486,6 @@ function app() {
                     'unknown': 'rgba(156, 163, 175, 1)'
                 };
 
-                forceCanvasSize(statusCanvas);
                 const statusCtx = statusCanvas.getContext('2d');
                 this.statusChart = new Chart(statusCtx, {
                     type: 'pie',
@@ -516,3 +504,6 @@ function app() {
         }
     };
 }
+
+// Make the app function globally available for Alpine.js
+window.app = app;
