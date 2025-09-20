@@ -48,7 +48,7 @@ jobs:
     - name: Compile organisation data
       run: |
         echo "Compiling organisation data..."
-        pnpm run compile -- --continue-on-error || true
+        npx tsx src/cli/index.ts --continue-on-error || echo "Compile completed with some errors"
 
         # Check if the file was created
         if [ ! -f "dist/orgs.json" ]; then
