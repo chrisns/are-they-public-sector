@@ -43,7 +43,7 @@ importers:
         specifier: ^30.0.0
         version: 30.0.0
       '@types/node':
-        specifier: ^20.0.0
+        specifier: ^20.19.17
         version: 20.19.17
       '@types/pdf-parse':
         specifier: ^1.1.5
