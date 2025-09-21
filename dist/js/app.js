@@ -359,7 +359,6 @@ function app() {
             // Destroy existing charts if they exist
             destroyChart('regionChart');
             destroyChart('sourceChart');
-            destroyChart('statusChart');
 
             // Chart.js defaults
             Chart.defaults.font.size = 11;
@@ -392,8 +391,8 @@ function app() {
             const regionCanvas = document.getElementById('regionChart');
             if (regionCanvas && regionCanvas.getContext) {
                 const regions = Object.entries(this.regionBreakdown)
-                    .filter(([region]) => region !== 'Unknown')
-                    .sort((a, b) => b[1] - a[1]);
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 10); // Show top 10 regions including Unknown
 
                 const regionCtx = regionCanvas.getContext('2d');
                 this.regionChart = new Chart(regionCtx, {
@@ -466,41 +465,7 @@ function app() {
                 });
             }
 
-            // Status Distribution Chart
-            const statusCanvas = document.getElementById('statusChart');
-            if (statusCanvas && statusCanvas.getContext) {
-                const statuses = Object.entries(this.statusBreakdown)
-                    .sort((a, b) => b[1] - a[1]);
-
-                const statusColors = {
-                    'active': 'rgba(34, 197, 94, 0.5)',
-                    'inactive': 'rgba(251, 146, 60, 0.5)',
-                    'dissolved': 'rgba(239, 68, 68, 0.5)',
-                    'unknown': 'rgba(156, 163, 175, 0.5)'
-                };
-
-                const statusBorderColors = {
-                    'active': 'rgba(34, 197, 94, 1)',
-                    'inactive': 'rgba(251, 146, 60, 1)',
-                    'dissolved': 'rgba(239, 68, 68, 1)',
-                    'unknown': 'rgba(156, 163, 175, 1)'
-                };
-
-                const statusCtx = statusCanvas.getContext('2d');
-                this.statusChart = new Chart(statusCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: statuses.map(([status]) => status.charAt(0).toUpperCase() + status.slice(1)),
-                        datasets: [{
-                            data: statuses.map(([, count]) => count),
-                            backgroundColor: statuses.map(([status]) => statusColors[status] || 'rgba(156, 163, 175, 0.5)'),
-                            borderColor: statuses.map(([status]) => statusBorderColors[status] || 'rgba(156, 163, 175, 1)'),
-                            borderWidth: 1
-                        }]
-                    },
-                    options: { ...sharedChartOptions }
-                });
-            }
+            // Status chart removed - all organizations are now active
         }
     };
 }
