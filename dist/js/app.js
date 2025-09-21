@@ -134,6 +134,11 @@ function app() {
 
                 console.log(`Loaded ${this.totalOrganisations} organisations`);
 
+                // Validate source label coverage in development
+                if (typeof SourceLabels !== 'undefined' && SourceLabels.validateCoverage) {
+                    SourceLabels.validateCoverage(this.organisations);
+                }
+
             } catch (err) {
                 console.error('Error loading data:', err);
                 this.error = `Failed to load data: ${err.message}`;
