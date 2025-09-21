@@ -20,11 +20,18 @@ function app() {
         selectedLocation: '',
         fuse: null, // Fuse.js instance
 
-        // Pagination state
-        currentPage: 1,
+        // Pagination state - single source of truth
         itemsPerPage: 30,
-        totalPages: 1,
         pageInfo: null, // Managed by Pagination module
+
+        // Computed properties for backward compatibility
+        get currentPage() {
+            return this.pageInfo?.currentPage || 1;
+        },
+
+        get totalPages() {
+            return this.pageInfo?.totalPages || 1;
+        },
 
         // Statistics
         totalOrganisations: 0,
@@ -37,10 +44,11 @@ function app() {
         // Initialize the application
         async init() {
             try {
-                // Load saved pagination preferences
-                if (typeof Pagination !== 'undefined') {
-                    this.itemsPerPage = Pagination.loadPreferences();
-                }
+                // Load saved pagination preferences (Pagination module is always available)
+                this.itemsPerPage = Pagination.loadPreferences();
+
+                // Setup keyboard navigation for pagination
+                this.setupKeyboardNavigation();
 
                 await this.loadData();
                 this.setupSearch();
@@ -283,93 +291,97 @@ function app() {
 
         // Update pagination using Pagination module
         updatePagination() {
-            if (typeof Pagination !== 'undefined') {
-                this.pageInfo = Pagination.calculate(
-                    this.filteredOrganisations.length,
-                    1, // Reset to page 1 when filters change
-                    this.itemsPerPage
-                );
-                this.currentPage = this.pageInfo.currentPage;
-                this.totalPages = this.pageInfo.totalPages;
-            } else {
-                // Fallback if module not loaded
-                this.totalPages = Math.max(1, Math.ceil(this.filteredOrganisations.length / this.itemsPerPage));
-                this.currentPage = 1;
-            }
+            this.pageInfo = Pagination.calculate(
+                this.filteredOrganisations.length,
+                1, // Reset to page 1 when filters change
+                this.itemsPerPage
+            );
             this.paginateResults();
         },
 
         // Paginate results using Pagination module
         paginateResults() {
-            if (typeof Pagination !== 'undefined' && this.pageInfo) {
-                // Use the Pagination module's method
-                this.paginatedOrganisations = Pagination.getPageItems(
-                    this.filteredOrganisations,
-                    this.pageInfo
+            if (!this.pageInfo) {
+                // Initialize pageInfo if not set
+                this.pageInfo = Pagination.calculate(
+                    this.filteredOrganisations.length,
+                    this.currentPage,
+                    this.itemsPerPage
                 );
+            }
 
-                // Only log in development mode
-                if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
-                    console.log(Pagination.getSummaryText(this.pageInfo));
-                }
-            } else {
-                // Fallback logic if module not available
-                if (this.currentPage < 1) {
-                    this.currentPage = 1;
-                }
-                if (this.currentPage > this.totalPages) {
-                    this.currentPage = this.totalPages;
-                }
+            // Use the Pagination module's method
+            this.paginatedOrganisations = Pagination.getPageItems(
+                this.filteredOrganisations,
+                this.pageInfo
+            );
 
-                const start = (this.currentPage - 1) * this.itemsPerPage;
-                const end = Math.min(start + this.itemsPerPage, this.filteredOrganisations.length);
-
-                if (start >= 0 && start < this.filteredOrganisations.length) {
-                    this.paginatedOrganisations = this.filteredOrganisations.slice(start, end);
-                } else {
-                    this.paginatedOrganisations = [];
-                }
+            // Only log in development mode
+            if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+                console.log(Pagination.getSummaryText(this.pageInfo));
             }
         },
 
         // Navigation methods using Pagination module
         previousPage() {
-            if (typeof Pagination !== 'undefined') {
-                this.pageInfo = Pagination.calculate(
-                    this.filteredOrganisations.length,
-                    this.currentPage - 1,
-                    this.itemsPerPage
-                );
-                this.currentPage = this.pageInfo.currentPage;
-                this.totalPages = this.pageInfo.totalPages;
-            } else if (this.currentPage > 1) {
-                this.currentPage--;
+            if (this.pageInfo && this.pageInfo.hasPrevious) {
+                this.goToPage(this.currentPage - 1);
             }
-            this.paginateResults();
         },
 
         nextPage() {
-            if (typeof Pagination !== 'undefined') {
-                this.pageInfo = Pagination.calculate(
-                    this.filteredOrganisations.length,
-                    this.currentPage + 1,
-                    this.itemsPerPage
-                );
-                this.currentPage = this.pageInfo.currentPage;
-                this.totalPages = this.pageInfo.totalPages;
-            } else if (this.currentPage < this.totalPages) {
-                this.currentPage++;
+            if (this.pageInfo && this.pageInfo.hasNext) {
+                this.goToPage(this.currentPage + 1);
             }
+        },
+
+        goToFirstPage() {
+            this.goToPage(1);
+        },
+
+        goToLastPage() {
+            if (this.pageInfo) {
+                this.goToPage(this.pageInfo.totalPages);
+            }
+        },
+
+        goToPage(pageNumber) {
+            this.pageInfo = Pagination.calculate(
+                this.filteredOrganisations.length,
+                pageNumber,
+                this.itemsPerPage
+            );
             this.paginateResults();
         },
 
         // Change items per page and save preference
         changeItemsPerPage(newSize) {
             this.itemsPerPage = newSize;
-            if (typeof Pagination !== 'undefined') {
-                Pagination.savePreferences(newSize);
-            }
+            Pagination.savePreferences(newSize);
             this.updatePagination();
+        },
+
+        // Setup keyboard navigation for pagination
+        setupKeyboardNavigation() {
+            document.addEventListener('keydown', (event) => {
+                // Only handle when not typing in input fields
+                if (event.target.matches('input, textarea, select')) return;
+
+                if (!this.pageInfo) return;
+
+                Pagination.keyboard.handleKeyEvent(event, this.pageInfo, {
+                    firstPage: () => this.goToFirstPage(),
+                    lastPage: () => this.goToLastPage(),
+                    previousPage: () => this.previousPage(),
+                    nextPage: () => this.nextPage(),
+                    goToPage: (page) => this.goToPage(page)
+                });
+            });
+        },
+
+        // Get ARIA labels for accessibility
+        getAriaLabels() {
+            return this.pageInfo ? Pagination.getAriaLabels(this.pageInfo) : {};
         },
 
         // Show organisation details
