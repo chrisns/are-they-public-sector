@@ -22,8 +22,9 @@ function app() {
 
         // Pagination state
         currentPage: 1,
-        itemsPerPage: 50,
+        itemsPerPage: 30,
         totalPages: 1,
+        pageInfo: null, // Managed by Pagination module
 
         // Statistics
         totalOrganisations: 0,
@@ -36,6 +37,11 @@ function app() {
         // Initialize the application
         async init() {
             try {
+                // Load saved pagination preferences
+                if (typeof Pagination !== 'undefined') {
+                    this.itemsPerPage = Pagination.loadPreferences();
+                }
+
                 await this.loadData();
                 this.setupSearch();
                 this.calculateStatistics();
@@ -149,7 +155,6 @@ function app() {
             const types = new Set();
             const typeCount = {};
             const regionCount = {};
-            const statusCount = {};
             const sourceCount = {};
 
             this.organisations.forEach(org => {
@@ -162,10 +167,6 @@ function app() {
                 const region = org.region || 'Unknown';
                 regionCount[region] = (regionCount[region] || 0) + 1;
 
-                // Count by status
-                const status = org.status || 'unknown';
-                statusCount[status] = (statusCount[status] || 0) + 1;
-
                 // Count by sources
                 if (org.sources && org.sources.length > 0) {
                     org.sources.forEach(source => {
@@ -177,7 +178,6 @@ function app() {
             this.organisationTypes = Array.from(types).sort();
             this.typeBreakdown = typeCount;
             this.regionBreakdown = regionCount;
-            this.statusBreakdown = statusCount;
             this.sourceBreakdown = sourceCount;
 
             // Calculate file size if not from metadata
@@ -188,19 +188,51 @@ function app() {
                 this.fileSizeMB = (sizeInBytes / (1024 * 1024)).toFixed(2);
             }
 
-            // Create charts after calculating statistics
-            this.chartsReady = false;
-            // Use requestAnimationFrame to ensure DOM is ready
-            requestAnimationFrame(() => {
-                if (!this.chartsCreated) {
+            // Use MutationObserver for robust DOM detection instead of brittle timeouts
+            this.chartsReady = true;
+
+            // Create charts when DOM elements are available
+            const createChartsWhenReady = () => {
+                if (this.chartsCreated) return;
+
+                const regionCanvas = document.getElementById('regionChart');
+                const sourceCanvas = document.getElementById('sourceChart');
+
+                if (regionCanvas && sourceCanvas) {
                     this.createCharts();
                     this.chartsCreated = true;
-                    this.chartsReady = true;
+                    return true;
                 }
-            });
+                return false;
+            };
+
+            // Try immediately in case DOM is ready
+            if (!createChartsWhenReady()) {
+                // Set up observer to watch for chart containers
+                const observer = new MutationObserver((_, obs) => {
+                    if (createChartsWhenReady()) {
+                        obs.disconnect();
+                    }
+                });
+
+                // Start observing
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+
+                // Fallback: disconnect after 10 seconds to prevent memory leak
+                setTimeout(() => {
+                    observer.disconnect();
+                    if (!this.chartsCreated) {
+                        console.warn('Charts could not be created: canvas elements not found');
+                    }
+                }, 10000);
+            }
         },
 
         // Perform search using Fuse.js
+        // Note: Debouncing is handled by Alpine.js in the HTML template (@input.debounce.300ms)
         performSearch() {
             if (!this.searchTerm.trim()) {
                 this.applyFilters();
@@ -249,33 +281,95 @@ function app() {
             return filtered;
         },
 
-        // Update pagination
+        // Update pagination using Pagination module
         updatePagination() {
-            this.totalPages = Math.ceil(this.filteredOrganisations.length / this.itemsPerPage);
-            this.currentPage = 1;
+            if (typeof Pagination !== 'undefined') {
+                this.pageInfo = Pagination.calculate(
+                    this.filteredOrganisations.length,
+                    1, // Reset to page 1 when filters change
+                    this.itemsPerPage
+                );
+                this.currentPage = this.pageInfo.currentPage;
+                this.totalPages = this.pageInfo.totalPages;
+            } else {
+                // Fallback if module not loaded
+                this.totalPages = Math.max(1, Math.ceil(this.filteredOrganisations.length / this.itemsPerPage));
+                this.currentPage = 1;
+            }
             this.paginateResults();
         },
 
-        // Paginate results
+        // Paginate results using Pagination module
         paginateResults() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            const end = start + this.itemsPerPage;
-            this.paginatedOrganisations = this.filteredOrganisations.slice(start, end);
+            if (typeof Pagination !== 'undefined' && this.pageInfo) {
+                // Use the Pagination module's method
+                this.paginatedOrganisations = Pagination.getPageItems(
+                    this.filteredOrganisations,
+                    this.pageInfo
+                );
+
+                // Only log in development mode
+                if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+                    console.log(Pagination.getSummaryText(this.pageInfo));
+                }
+            } else {
+                // Fallback logic if module not available
+                if (this.currentPage < 1) {
+                    this.currentPage = 1;
+                }
+                if (this.currentPage > this.totalPages) {
+                    this.currentPage = this.totalPages;
+                }
+
+                const start = (this.currentPage - 1) * this.itemsPerPage;
+                const end = Math.min(start + this.itemsPerPage, this.filteredOrganisations.length);
+
+                if (start >= 0 && start < this.filteredOrganisations.length) {
+                    this.paginatedOrganisations = this.filteredOrganisations.slice(start, end);
+                } else {
+                    this.paginatedOrganisations = [];
+                }
+            }
         },
 
-        // Navigation methods
+        // Navigation methods using Pagination module
         previousPage() {
-            if (this.currentPage > 1) {
+            if (typeof Pagination !== 'undefined') {
+                this.pageInfo = Pagination.calculate(
+                    this.filteredOrganisations.length,
+                    this.currentPage - 1,
+                    this.itemsPerPage
+                );
+                this.currentPage = this.pageInfo.currentPage;
+                this.totalPages = this.pageInfo.totalPages;
+            } else if (this.currentPage > 1) {
                 this.currentPage--;
-                this.paginateResults();
             }
+            this.paginateResults();
         },
 
         nextPage() {
-            if (this.currentPage < this.totalPages) {
+            if (typeof Pagination !== 'undefined') {
+                this.pageInfo = Pagination.calculate(
+                    this.filteredOrganisations.length,
+                    this.currentPage + 1,
+                    this.itemsPerPage
+                );
+                this.currentPage = this.pageInfo.currentPage;
+                this.totalPages = this.pageInfo.totalPages;
+            } else if (this.currentPage < this.totalPages) {
                 this.currentPage++;
-                this.paginateResults();
             }
+            this.paginateResults();
+        },
+
+        // Change items per page and save preference
+        changeItemsPerPage(newSize) {
+            this.itemsPerPage = newSize;
+            if (typeof Pagination !== 'undefined') {
+                Pagination.savePreferences(newSize);
+            }
+            this.updatePagination();
         },
 
         // Show organisation details
@@ -323,15 +417,6 @@ function app() {
                 ).join(' ');
         },
 
-        getStatusClass(status) {
-            switch(status) {
-                case 'active': return 'status-active';
-                case 'inactive': return 'status-inactive';
-                case 'dissolved': return 'status-dissolved';
-                default: return 'text-gray-500';
-            }
-        },
-
         /**
          * Creates data visualization charts with fixed dimensions.
          *
@@ -348,11 +433,15 @@ function app() {
             // Prevent multiple chart creations
             if (this.chartsCreated) return;
 
-            // Helper function to destroy chart and clear canvas
+            // Helper function to safely destroy chart
             const destroyChart = (chartProperty) => {
-                if (this[chartProperty]) {
-                    this[chartProperty].destroy();
-                    this[chartProperty] = null;
+                try {
+                    if (this[chartProperty]) {
+                        this[chartProperty].destroy();
+                        this[chartProperty] = null;
+                    }
+                } catch (error) {
+                    console.warn(`Failed to destroy ${chartProperty}:`, error);
                 }
             };
 
@@ -387,15 +476,16 @@ function app() {
                 }
             };
 
-            // Regional Distribution Chart
-            const regionCanvas = document.getElementById('regionChart');
-            if (regionCanvas && regionCanvas.getContext) {
-                const regions = Object.entries(this.regionBreakdown)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 10); // Show top 10 regions including Unknown
+            // Regional Distribution Chart with error handling
+            try {
+                const regionCanvas = document.getElementById('regionChart');
+                if (regionCanvas && regionCanvas.getContext) {
+                    const regions = Object.entries(this.regionBreakdown)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10); // Show top 10 regions including Unknown
 
-                const regionCtx = regionCanvas.getContext('2d');
-                this.regionChart = new Chart(regionCtx, {
+                    const regionCtx = regionCanvas.getContext('2d');
+                    this.regionChart = new Chart(regionCtx, {
                     type: 'doughnut',
                     data: {
                         labels: regions.map(([region]) => region),
@@ -407,7 +497,11 @@ function app() {
                                 'rgba(168, 85, 247, 0.5)',
                                 'rgba(251, 146, 60, 0.5)',
                                 'rgba(239, 68, 68, 0.5)',
-                                'rgba(14, 165, 233, 0.5)'
+                                'rgba(14, 165, 233, 0.5)',
+                                'rgba(236, 72, 153, 0.5)',
+                                'rgba(156, 163, 175, 0.5)',
+                                'rgba(251, 191, 36, 0.5)',
+                                'rgba(6, 182, 212, 0.5)'
                             ],
                             borderColor: [
                                 'rgba(59, 130, 246, 1)',
@@ -415,24 +509,33 @@ function app() {
                                 'rgba(168, 85, 247, 1)',
                                 'rgba(251, 146, 60, 1)',
                                 'rgba(239, 68, 68, 1)',
-                                'rgba(14, 165, 233, 1)'
+                                'rgba(14, 165, 233, 1)',
+                                'rgba(236, 72, 153, 1)',
+                                'rgba(156, 163, 175, 1)',
+                                'rgba(251, 191, 36, 1)',
+                                'rgba(6, 182, 212, 1)'
                             ],
                             borderWidth: 1
                         }]
                     },
                     options: { ...sharedChartOptions }
-                });
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to create region chart:', error);
+                // Continue with other charts even if this one fails
             }
 
-            // Data Sources Chart
-            const sourceCanvas = document.getElementById('sourceChart');
-            if (sourceCanvas && sourceCanvas.getContext) {
-                const topSources = Object.entries(this.sourceBreakdown)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 8); // Limit to top 8 sources for pie chart
+            // Data Sources Chart with error handling
+            try {
+                const sourceCanvas = document.getElementById('sourceChart');
+                if (sourceCanvas && sourceCanvas.getContext) {
+                    const topSources = Object.entries(this.sourceBreakdown)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 8); // Limit to top 8 sources for pie chart
 
-                const sourceCtx = sourceCanvas.getContext('2d');
-                this.sourceChart = new Chart(sourceCtx, {
+                    const sourceCtx = sourceCanvas.getContext('2d');
+                    this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
                     data: {
                         labels: topSources.map(([source]) => source),
@@ -462,8 +565,14 @@ function app() {
                         }]
                     },
                     options: { ...sharedChartOptions }
-                });
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to create source chart:', error);
             }
+
+            // Mark as created even if some charts failed
+            this.chartsCreated = true;
 
             // Status chart removed - all organizations are now active
         }
