@@ -384,6 +384,14 @@ function app() {
             return this.pageInfo ? Pagination.getAriaLabels(this.pageInfo) : {};
         },
 
+        // Get human-readable source label
+        getSourceLabel(sourceId) {
+            if (typeof SourceLabels !== 'undefined') {
+                return SourceLabels.getLabel(sourceId);
+            }
+            return sourceId;
+        },
+
         // Show organisation details
         showDetails(org) {
             this.selectedOrg = org;
@@ -550,7 +558,13 @@ function app() {
                     this.sourceChart = new Chart(sourceCtx, {
                     type: 'pie',
                     data: {
-                        labels: topSources.map(([source]) => source),
+                        labels: topSources.map(([source]) => {
+                            // Use human-readable labels for charts
+                            if (typeof SourceLabels !== 'undefined') {
+                                return SourceLabels.getShortLabel(source);
+                            }
+                            return source;
+                        }),
                         datasets: [{
                             data: topSources.map(([, count]) => count),
                             backgroundColor: [
