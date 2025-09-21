@@ -84,6 +84,9 @@ import { DataSourceType, OrganisationType } from '../models/organisation.js';
 // Import logger
 import { Logger, createLogger, LogLevel } from './logger.js';
 
+// Import filter utility
+import { OrganisationFilter } from '../lib/organisation-filter.js';
+
 /**
  * Orchestrator configuration
  */
@@ -1979,16 +1982,9 @@ export class Orchestrator {
       // Track memory after fetching
       this.trackMemory();
 
-      // Filter out inactive/dissolved/closed organisations
-      const activeOrganisations = allOrganisations.filter(org => {
-        // Keep organization if status is explicitly 'active' or not specified
-        // Exclude if status is inactive, dissolved, closed, liquidated, etc.
-        if (!org.status) return true; // Keep if no status specified
-        const status = org.status.toLowerCase();
-        return status === 'active' || status === 'open' || status === 'live';
-      });
-
-      this.logger.info(`Filtered out ${allOrganisations.length - activeOrganisations.length} inactive/dissolved organisations`);
+      // Filter out inactive/dissolved organisations using utility class
+      const { active: activeOrganisations, counts } = OrganisationFilter.filterActiveWithCounts(allOrganisations);
+      this.logger.info(`Filtered out ${counts.inactive} inactive and ${counts.dissolved} dissolved organisations (${counts.total - counts.active} total)`);
 
       const finalOrganisations = activeOrganisations;
 
@@ -2373,16 +2369,9 @@ export class Orchestrator {
         mappedFields: 10 // Standard fields mapped
       };
 
-      // Filter out inactive/dissolved/closed organisations
-      const activeOrganisations = allOrganisations.filter(org => {
-        // Keep organization if status is explicitly 'active' or not specified
-        // Exclude if status is inactive, dissolved, closed, liquidated, etc.
-        if (!org.status) return true; // Keep if no status specified
-        const status = org.status.toLowerCase();
-        return status === 'active' || status === 'open' || status === 'live';
-      });
-
-      this.logger.info(`Filtered out ${allOrganisations.length - activeOrganisations.length} inactive/dissolved organisations`);
+      // Filter out inactive/dissolved organisations using utility class
+      const { active: activeOrganisations, counts } = OrganisationFilter.filterActiveWithCounts(allOrganisations);
+      this.logger.info(`Filtered out ${counts.inactive} inactive and ${counts.dissolved} dissolved organisations (${counts.total - counts.active} total)`);
 
       const finalOrganisations = activeOrganisations;
 
