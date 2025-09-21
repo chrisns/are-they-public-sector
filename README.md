@@ -6,10 +6,10 @@
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green)](https://nodejs.org/)
 [![Coverage](https://img.shields.io/badge/Coverage-80%25%2B-brightgreen)](https://jestjs.io/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-[![Data](https://img.shields.io/badge/Organisations-59%2C977-orange)](dist/orgs.json)
+[![Data](https://img.shields.io/badge/Active%20Organisations-34%2C792-orange)](dist/orgs.json)
 [![Sources](https://img.shields.io/badge/Data%20Sources-30-purple)](docs/data-sources.md)
 
-A powerful TypeScript CLI tool that aggregates UK public sector organisation data from **30+ government sources** into a unified JSON format. This tool brings together data from diverse sources, creating a comprehensive dataset of **59,977 organisations** including schools, NHS trusts, local authorities, police forces, fire services, courts, community councils, and all UK government departments.
+A powerful TypeScript CLI tool that aggregates UK public sector organisation data from **30+ government sources** into a unified JSON format. This tool brings together data from diverse sources, creating a comprehensive dataset of **34,792 active organisations** (excluding 25,187 inactive/dissolved entities) including schools, NHS trusts, local authorities, police forces, fire services, courts, community councils, and all UK government departments.
 
 ## 🚀 Why This Matters
 
@@ -24,7 +24,7 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 
 ## ✨ Features
 
-### 🎯 Comprehensive Data Coverage - 59,977 Organisations
+### 🎯 Comprehensive Data Coverage - 34,792 Active Organisations
 
 | Category | Count | Sources |
 |----------|-------|---------|
@@ -38,7 +38,7 @@ Perfect for researchers, journalists, developers, and anyone working with UK pub
 ### 🛠 Technical Excellence
 - **Multi-Source Aggregation**: Seamlessly combines JSON APIs, CSV files, Excel downloads, HTML scraping, and PDF parsing
 - **Data Quality Scoring**: Automatic assessment of data completeness and reliability
-- **Stream Processing**: Handles massive datasets (70MB+ output) efficiently
+- **Stream Processing**: Handles massive datasets (40MB+ output) efficiently
 - **Robust Error Recovery**: Exponential backoff, retry mechanisms, and graceful failure handling
 - **80%+ Test Coverage**: Comprehensive testing with unit, integration, and contract tests
 - **TypeScript First**: Full type safety and excellent IDE support

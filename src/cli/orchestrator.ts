@@ -1979,8 +1979,18 @@ export class Orchestrator {
       // Track memory after fetching
       this.trackMemory();
 
-      // No deduplication - use all organisations as-is
-      const finalOrganisations = allOrganisations;
+      // Filter out inactive/dissolved/closed organisations
+      const activeOrganisations = allOrganisations.filter(org => {
+        // Keep organization if status is explicitly 'active' or not specified
+        // Exclude if status is inactive, dissolved, closed, liquidated, etc.
+        if (!org.status) return true; // Keep if no status specified
+        const status = org.status.toLowerCase();
+        return status === 'active' || status === 'open' || status === 'live';
+      });
+
+      this.logger.info(`Filtered out ${allOrganisations.length - activeOrganisations.length} inactive/dissolved organisations`);
+
+      const finalOrganisations = activeOrganisations;
 
       // Track final memory usage
       this.trackMemory();
@@ -2363,8 +2373,18 @@ export class Orchestrator {
         mappedFields: 10 // Standard fields mapped
       };
 
-      // No deduplication - use all organisations as-is
-      const finalOrganisations = allOrganisations;
+      // Filter out inactive/dissolved/closed organisations
+      const activeOrganisations = allOrganisations.filter(org => {
+        // Keep organization if status is explicitly 'active' or not specified
+        // Exclude if status is inactive, dissolved, closed, liquidated, etc.
+        if (!org.status) return true; // Keep if no status specified
+        const status = org.status.toLowerCase();
+        return status === 'active' || status === 'open' || status === 'live';
+      });
+
+      this.logger.info(`Filtered out ${allOrganisations.length - activeOrganisations.length} inactive/dissolved organisations`);
+
+      const finalOrganisations = activeOrganisations;
 
       // Phase 4: Output Generation
       this.logger.subsection('Phase 4: Output Generation');

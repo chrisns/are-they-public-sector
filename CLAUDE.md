@@ -1,7 +1,7 @@
 # Claude Code Context
 
 ## Project Overview
-UK Public Sector Organisation Aggregator - A TypeScript CLI that aggregates 59,977 organisations from 30 government sources into unified JSON.
+UK Public Sector Organisation Aggregator - A TypeScript CLI that aggregates 34,792 active organisations from 30 government sources into unified JSON (filters out 25,187 inactive/dissolved entities).
 
 ## Tech Stack
 - **Language**: TypeScript 5.x with ESM modules
@@ -13,7 +13,7 @@ UK Public Sector Organisation Aggregator - A TypeScript CLI that aggregates 59,9
 ## Commands
 ```bash
 pnpm install          # Install dependencies
-pnpm run compile      # Execute aggregator (generates dist/orgs.json ~70MB)
+pnpm run compile      # Execute aggregator (generates dist/orgs.json ~40MB)
 pnpm test            # Run all tests
 pnpm run coverage    # Generate coverage report
 pnpm run lint        # Type check with tsc --noEmit
@@ -85,10 +85,12 @@ See `docs/data-sources.md` for complete details.
 - **UTF-8**: Full support for Welsh/Scottish special characters
 
 ## Recent Major Changes
+- Added filtering to exclude inactive/dissolved organisations (25,187 removed)
+- Now only includes active/operational organisations (34,792 total)
 - Removed all deduplication functionality
 - Converted file-based to in-memory processing
 - Fixed 404s in 5 fetchers (URLs updated)
-- Added 30 total data sources (59,977 organisations)
+- Added 30 total data sources
 - Added file size reporting to CLI output
 
 ## Testing Helpers
@@ -100,7 +102,7 @@ pnpm run compile -- --source schools
 pnpm run compile 2>&1 | grep ERROR
 
 # Verify output size
-ls -lh dist/orgs.json  # Should be ~70MB
+ls -lh dist/orgs.json  # Should be ~40MB
 ```
 
 ## Common Issues & Fixes
