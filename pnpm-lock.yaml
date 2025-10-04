@@ -24,8 +24,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
       pdf-parse:
-        specifier: ^2.0.0
-        version: 2.1.1
+        specifier: ^2.1.7
+        version: 2.1.7
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -2044,9 +2044,9 @@ packages:
     resolution: {integrity: sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==}
     engines: {node: '>=16 || 14 >=14.18'}
 
-  pdf-parse@2.1.1:
-    resolution: {integrity: sha512-TBaOxgBnBrvyN8bmRu14k+cx1E/a4t8/InL+sD6SYIJLBJmplPwm6x5FPvHFwuZfYR/Ow3teb9L4HWCUlQg+Eg==}
-    engines: {node: '>=18'}
+  pdf-parse@2.1.7:
+    resolution: {integrity: sha512-bO9yT+xiQu73i1Anp1TQHqqKdL7zkhbGeMEiSBL3XBTDk1LZUySsHjMyxhpevAi4h78zbpM/c0HACdf6TQLj/Q==}
+    engines: {node: '>=16'}
 
   pdfjs-dist@5.4.149:
     resolution: {integrity: sha512-Xe8/1FMJEQPUVSti25AlDpwpUm2QAVmNOpFP0SIahaPIOKBKICaefbzogLdwey3XGGoaP4Lb9wqiw2e9Jqp0LA==}
@@ -4834,7 +4834,7 @@ snapshots:
       lru-cache: 10.4.3
       minipass: 7.1.2
 
-  pdf-parse@2.1.1:
+  pdf-parse@2.1.7:
     dependencies:
       pdfjs-dist: 5.4.149
 
