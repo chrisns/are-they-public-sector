@@ -24,8 +24,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
       pdf-parse:
-        specifier: ^2.0.0
-        version: 2.1.7
+        specifier: ^2.2.9
+        version: 2.2.9
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
@@ -2052,9 +2052,9 @@ packages:
     resolution: {integrity: sha512-Xa4Nw17FS9ApQFJ9umLiJS4orGjm7ZzwUrwamcGQuHSzDyth9boKDaycYdDcZDuqYATXw4HFXgaqWTctW/v1HA==}
     engines: {node: '>=16 || 14 >=14.18'}
 
-  pdf-parse@2.1.7:
-    resolution: {integrity: sha512-bO9yT+xiQu73i1Anp1TQHqqKdL7zkhbGeMEiSBL3XBTDk1LZUySsHjMyxhpevAi4h78zbpM/c0HACdf6TQLj/Q==}
-    engines: {node: '>=16'}
+  pdf-parse@2.2.9:
+    resolution: {integrity: sha512-GOiPqtrwnLqA+0amrYZJ8/qPfj7xFIlVLk9Kyxg8irQEC5Q+lb/I4EDCeVf/osk8HwzDzZW8oS2XwvwbE5YirA==}
+    engines: {node: '>=20.16.0 <21 || >=22.3.0'}
 
   pdfjs-dist@5.4.296:
     resolution: {integrity: sha512-DlOzet0HO7OEnmUmB6wWGJrrdvbyJKftI1bhMitK7O2N8W2gc757yyYBbINy9IDafXAV9wmKr9t7xsTaNKRG5Q==}
@@ -4853,9 +4853,11 @@ snapshots:
       lru-cache: 10.4.3
       minipass: 7.1.2
 
-  pdf-parse@2.1.7:
+  pdf-parse@2.2.9:
     dependencies:
       pdfjs-dist: 5.4.296
+    optionalDependencies:
+      '@napi-rs/canvas': 0.1.80
 
   pdfjs-dist@5.4.296:
     optionalDependencies:
