@@ -35,4 +35,5 @@ module.exports = {
       statements: 80,
     },
   },
+  testTimeout: 60000, // Set 60 second timeout for integration/contract tests
 };

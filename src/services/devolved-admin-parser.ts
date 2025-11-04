@@ -30,24 +30,79 @@ export class DevolvedAdminParser {
 
   /**
    * Fetch HTML from gov.uk guidance page
+   * Uses manual redirect handling to avoid self-redirect loops
    */
   private async fetchHTML(): Promise<string> {
     try {
-      const response = await axios.get(this.url, {
-        timeout: this.timeout,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; UK Public Sector Aggregator)',
-          'Accept': 'text/html'
-        },
-        maxRedirects: 5,
-        validateStatus: (status) => status < 500
-      });
+      let currentUrl = this.url;
+      const visitedUrls = new Set<string>();
+      const maxAttempts = 5;
 
-      if (response.status !== 200) {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Check for redirect loop
+        if (visitedUrls.has(currentUrl)) {
+          // Self-redirect detected - proceed with the URL anyway
+          console.log(`Self-redirect detected for ${currentUrl}, proceeding...`);
+          break;
+        }
+        visitedUrls.add(currentUrl);
+
+        const response = await axios.get(currentUrl, {
+          timeout: this.timeout,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html',
+            'Accept-Encoding': 'gzip, deflate'
+          },
+          maxRedirects: 0,
+          validateStatus: (status) => status < 500
+        });
+
+        // If we get a 200, return the data
+        if (response.status === 200) {
+          return response.data;
+        }
+
+        // If it's a redirect, follow it manually
+        if (response.status >= 300 && response.status < 400) {
+          const location = response.headers.location;
+          if (!location) {
+            throw new Error(`Redirect status ${response.status} but no Location header`);
+          }
+
+          // If redirecting to the same URL, it's a self-redirect - just accept the response
+          if (location === currentUrl) {
+            console.log(`Self-redirect detected for ${currentUrl}, treating as success...`);
+            // The server is self-redirecting, which is a misconfiguration
+            // Try fetching with a different approach - accept any 2xx or 3xx
+            const finalResponse = await axios.get(currentUrl, {
+              timeout: this.timeout,
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html',
+                'Accept-Encoding': 'gzip, deflate'
+              },
+              maxRedirects: 0,
+              validateStatus: (status) => status < 400
+            });
+
+            // If we get content even with a 301, use it
+            if (finalResponse.data && typeof finalResponse.data === 'string' && finalResponse.data.length > 0) {
+              return finalResponse.data;
+            }
+
+            throw new Error(`Self-redirect to ${currentUrl} with no content`);
+          }
+
+          currentUrl = location;
+          continue;
+        }
+
         throw new Error(`Guidance page returned status ${response.status}`);
       }
 
-      return response.data;
+      // If we've exhausted attempts, throw error
+      throw new Error(`Too many redirects after ${maxAttempts} attempts`);
     } catch (error) {
       throw new DevolvedAdminError(
         `Failed to fetch devolved administrations data from ${this.url}: ${error}`,
