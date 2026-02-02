@@ -1,5 +1,7 @@
 # 🇬🇧 UK Public Sector Organisation Aggregator
 
+> ⚠️ **ARCHIVED**: This project is no longer under active development and has been archived. No further updates, bug fixes, or support will be provided.
+
 **The most comprehensive, open-source dataset of UK public sector organisations ever assembled!**
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
